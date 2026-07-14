@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Großes Hinterrad -->
+  <circle cx="6" cy="17" r="4" />
+  <!-- Kleines Vorderrad -->
+  <circle cx="18" cy="18" r="3" />
+  <!-- Karosserie -->
+  <path d="M6 13h9l1 3M10 13V8h5v5h3v2" />
+  <!-- Auspuff -->
+  <path d="M13 8V5h1" />
+</svg>

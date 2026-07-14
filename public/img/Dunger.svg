@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Sprühflasche / Kanister -->
+  <path d="M7 11V8a5 5 0 0 1 10 0v3" />
+  <path d="M5 11h14v10H5z" />
+  <!-- Chemisches/Pflanzen-Symbol im Kanister -->
+  <path d="M12 14v4M10 16h4" />
+</svg>
