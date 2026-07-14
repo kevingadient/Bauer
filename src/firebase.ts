@@ -362,7 +362,19 @@ export const getUserProfile = async (uid: string): Promise<any | null> => {
     }
   } else {
     const local = localStorage.getItem(`hoftausch_profile_${uid}`);
-    return local ? JSON.parse(local) : null;
+    if (local) {
+      return JSON.parse(local);
+    }
+    // Default admin mock profile for Josef to allow instant local admin role testing
+    if (uid === 'mock_user_google_josef') {
+      return {
+        email: 'josef.google@landwirt.de',
+        phone: '+41 79 123 45 67',
+        address: 'Gorwiden 32, 8057 Zürich',
+        role: 'admin'
+      };
+    }
+    return null;
   }
 };
 

@@ -158,6 +158,7 @@ function App() {
   // Navigation: 'market' | 'create' | 'my-listings' | 'my-requests'
   const [activeTab, setActiveTab] = useState<'market' | 'create' | 'my-listings' | 'my-requests'>('market');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -259,14 +260,19 @@ function App() {
             setProfileEmail(profile.email || user.email || '');
             setProfilePhone(profile.phone || user.phoneNumber || '');
             setProfileAddress(profile.address || '');
+            setIsAdmin(profile.role === 'admin');
           } else {
             setProfileEmail(user.email || '');
             setProfilePhone(user.phoneNumber || '');
             setProfileAddress('');
+            setIsAdmin(false);
           }
         } catch (e) {
           console.error("[HofTausch] Error loading user profile on auth change:", e);
+          setIsAdmin(false);
         }
+      } else {
+        setIsAdmin(false);
       }
       setAuthLoading(false);
     });
@@ -1304,7 +1310,10 @@ function App() {
                 </div>
               )}
               <div className="text-left text-xs max-w-[120px]">
-                <p className="font-bold text-stone-800 truncate">{currentUser.displayName || 'Bauer'}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-stone-800 truncate">{currentUser.displayName || 'Bauer'}</p>
+                  {isAdmin && <span className="bg-rose-100 text-rose-800 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-rose-200 uppercase tracking-wide shrink-0">Admin</span>}
+                </div>
                 <p className="text-stone-400 truncate">{currentUser.email || currentUser.phoneNumber}</p>
               </div>
             </div>
@@ -2095,6 +2104,25 @@ function App() {
                     </div>
                   </div>
                 </div>
+
+                {isAdmin && (
+                  <div className="bg-rose-50/70 border border-rose-200/60 rounded-2xl p-4 space-y-2 mt-4 animate-fade-in">
+                    <span className="text-[10px] font-bold text-rose-800 uppercase tracking-wider block">Admin-Moderationsbereich</span>
+                    <p className="text-xs text-rose-700">Als Administrator kannst du dieses Inserat dauerhaft vom Marktplatz entfernen.</p>
+                    <button 
+                      onClick={async () => {
+                        if (selectedListing) {
+                          const idToDelete = selectedListing.id;
+                          setSelectedListing(null);
+                          await handleDeleteListing(idToDelete);
+                        }
+                      }}
+                      className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2.5 rounded-xl transition-all duration-200 text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Trash2 className="w-4 h-4" /> Inserat löschen (Moderation)
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex gap-4 pt-4 border-t border-stone-100">
                   <button 
