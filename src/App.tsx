@@ -51,13 +51,13 @@ import {
 } from './firebase';
 
 const CATEGORY_STYLES: Record<Listing['category'], { bg: string; text: string; border: string; icon: string }> = {
-  Futter: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: '/img/Futter.svg' },
-  Saatgut: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: '/img/Saatgut.svg' },
-  Maschinen: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: '/img/Maschinen.svg' },
-  Tiere: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: '/img/Tiere.svg' },
-  Dienstleistung: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', icon: '/img/Dienstleistung.svg' },
-  Dünger: { bg: 'bg-lime-50', text: 'text-lime-800', border: 'border-lime-200', icon: '/img/Dunger.svg' },
-  Sonstiges: { bg: 'bg-stone-50', text: 'text-stone-700', border: 'border-stone-200', icon: '/img/Sonstiges.svg' },
+  Futter: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: `${import.meta.env.BASE_URL}img/Futter.svg` },
+  Saatgut: { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-200', icon: `${import.meta.env.BASE_URL}img/Saatgut.svg` },
+  Maschinen: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: `${import.meta.env.BASE_URL}img/Maschinen.svg` },
+  Tiere: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', icon: `${import.meta.env.BASE_URL}img/Tiere.svg` },
+  Dienstleistung: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', icon: `${import.meta.env.BASE_URL}img/Dienstleistung.svg` },
+  Dünger: { bg: 'bg-lime-50', text: 'text-lime-800', border: 'border-lime-200', icon: `${import.meta.env.BASE_URL}img/Dunger.svg` },
+  Sonstiges: { bg: 'bg-stone-50', text: 'text-stone-700', border: 'border-stone-200', icon: `${import.meta.env.BASE_URL}img/Sonstiges.svg` },
 };
 
 interface SwissLocationInfo {
@@ -386,7 +386,7 @@ function App() {
         const markerColor = hasOwn ? '#f59e0b' : '#059669'; 
         
         const firstListing = groupListings[0];
-        const catIcon = CATEGORY_STYLES[firstListing.category]?.icon || '/img/Sonstiges.svg';
+        const catIcon = CATEGORY_STYLES[firstListing.category]?.icon || `${import.meta.env.BASE_URL}img/Sonstiges.svg`;
         
         // Build customized icon HTML. If stacked, display a badge with the count on top-right
         let iconHtml = `
@@ -445,7 +445,7 @@ function App() {
           
           groupListings.forEach((listing, idx) => {
             const isOwn = listing.userId === currentUser?.uid;
-            const lIcon = CATEGORY_STYLES[listing.category]?.icon || '/img/Sonstiges.svg';
+            const lIcon = CATEGORY_STYLES[listing.category]?.icon || `${import.meta.env.BASE_URL}img/Sonstiges.svg`;
             listHtml += `
               <div class="space-y-1.5 ${idx > 0 ? 'border-t border-stone-100 pt-2' : ''}">
                 <div class="flex items-center justify-between gap-1 flex-wrap">
@@ -1352,7 +1352,7 @@ function App() {
               <div className="flex-1 w-full max-w-md lg:max-w-none flex justify-center lg:justify-end">
                 <div className="relative group w-full aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3] rounded-2xl overflow-hidden border border-stone-200/60 shadow-xl bg-stone-100 transition-transform duration-500 hover:scale-[1.02]">
                   <img 
-                    src="/img/header.png" 
+                    src={`${import.meta.env.BASE_URL}img/header.png`} 
                     alt="HofTausch Hero" 
                     className="w-full h-full object-cover"
                   />
@@ -1972,7 +1972,7 @@ function App() {
                     } ${CATEGORY_STYLES[selectedListing.category]?.text || 'text-stone-700'} ${
                       CATEGORY_STYLES[selectedListing.category]?.border || 'border-stone-200'
                     }`}>
-                      <img src={CATEGORY_STYLES[selectedListing.category]?.icon || '/img/Sonstiges.svg'} alt="" className="w-4 h-4" />
+                      <img src={CATEGORY_STYLES[selectedListing.category]?.icon || `${import.meta.env.BASE_URL}img/Sonstiges.svg`} alt="" className="w-4 h-4" />
                       {selectedListing.category}
                     </span>
                     <span className="text-xs text-stone-400 flex items-center gap-1">
