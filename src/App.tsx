@@ -22,7 +22,8 @@ import {
   Phone,
   Map as MapIcon,
   List,
-  Pencil
+  Pencil,
+  Menu
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -156,6 +157,7 @@ function App() {
 
   // Navigation: 'market' | 'create' | 'my-listings' | 'my-requests'
   const [activeTab, setActiveTab] = useState<'market' | 'create' | 'my-listings' | 'my-requests'>('market');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -1314,9 +1316,84 @@ function App() {
             >
               <LogOut className="w-4 h-4" />
             </button>
+
+            {/* Mobile Hamburger Menu Button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2.5 rounded-xl border border-stone-200 text-stone-600 hover:text-stone-950 hover:bg-stone-50 transition-all duration-200"
+              aria-label="Menü öffnen"
+            >
+              {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white border-b border-stone-200/80 px-4 py-3 space-y-2 shadow-sm animate-fade-in">
+          <button 
+            onClick={() => { setActiveTab('market'); setIsMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+              activeTab === 'market' 
+                ? 'bg-emerald-600 text-white shadow-sm' 
+                : 'text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            Marktplatz
+          </button>
+          <button 
+            onClick={() => { setActiveTab('create'); setIsMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+              activeTab === 'create' 
+                ? 'bg-emerald-600 text-white shadow-sm' 
+                : 'text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            <PlusCircle className="w-4 h-4" /> Inserat erstellen
+          </button>
+          <button 
+            onClick={() => { setActiveTab('my-listings'); setIsMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-between ${
+              activeTab === 'my-listings' 
+                ? 'bg-emerald-600 text-white shadow-sm' 
+                : 'text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            <span className="flex items-center gap-2">Meine Inserate & Anfragen</span>
+            {requests.filter(r => listings.filter(l => l.userId === currentUser.uid).map(l => l.id).includes(r.listingId) && r.status === 'offen').length > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {requests.filter(r => listings.filter(l => l.userId === currentUser.uid).map(l => l.id).includes(r.listingId) && r.status === 'offen').length}
+              </span>
+            )}
+          </button>
+          <button 
+            onClick={() => { setActiveTab('my-requests'); setIsMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+              activeTab === 'my-requests' 
+                ? 'bg-emerald-600 text-white shadow-sm' 
+                : 'text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            Gesendete Anfragen
+          </button>
+
+          {/* User profile inside Mobile Menu on extra small screens */}
+          <div className="sm:hidden pt-3 border-t border-stone-100 flex items-center gap-2 px-2">
+            {currentUser.photoURL ? (
+              <img src={currentUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-stone-200" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs uppercase">
+                {(currentUser.displayName || currentUser.email || 'B').charAt(0)}
+              </div>
+            )}
+            <div className="text-left text-xs truncate">
+              <p className="font-bold text-stone-800 truncate">{currentUser.displayName || 'Bauer'}</p>
+              <p className="text-stone-400 truncate text-[10px]">{currentUser.email || currentUser.phoneNumber}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
