@@ -443,6 +443,11 @@ function App() {
     };
   }, []);
 
+  // Scroll to top on active tab changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
 
   // Query parameter ?no-track=true handler
   useEffect(() => {
