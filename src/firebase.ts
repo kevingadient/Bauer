@@ -562,3 +562,25 @@ export const deleteBlogPost = async (id: string) => {
     notifyMockBlog();
   }
 };
+
+export const addFeedback = async (feedback: {
+  userId?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  message: string;
+  date: string;
+}) => {
+  if (!isMock && db) {
+    const docRef = await addDoc(collection(db, 'feedback'), feedback);
+    return docRef.id;
+  } else {
+    const savedFeedback = localStorage.getItem('hoftausch_mock_feedback') || '[]';
+    const list = JSON.parse(savedFeedback);
+    const newId = 'feedback_' + Date.now();
+    list.push({ id: newId, ...feedback });
+    localStorage.setItem('hoftausch_mock_feedback', JSON.stringify(list));
+    console.log("[HofTausch Mock Feedback Saved]:", feedback);
+    return newId;
+  }
+};

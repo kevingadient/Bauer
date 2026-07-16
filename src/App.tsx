@@ -54,6 +54,7 @@ import {
   subscribeToBlog,
   addBlogPost,
   deleteBlogPost,
+  addFeedback,
   RecaptchaVerifier,
   auth
 } from './firebase';
@@ -246,6 +247,10 @@ function App() {
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostAuthor, setNewPostAuthor] = useState('');
   const [writePostLoading, setWritePostLoading] = useState(false);
+
+  // Feedback form states
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings' | 'about' | 'blog' | 'contribute'
   const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings' | 'about' | 'blog' | 'contribute'>('landing');
@@ -1295,6 +1300,30 @@ function App() {
       showToast('Fehler beim Speichern des Beitrags: ' + err.message, 'error');
     } finally {
       setWritePostLoading(false);
+    }
+  };
+
+  const handleSendFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackText.trim()) return;
+
+    setFeedbackLoading(true);
+    try {
+      await addFeedback({
+        userId: currentUser?.uid || 'guest',
+        name: currentUser ? `${profileFirstName} ${profileLastName}` : 'Anonymer Gast',
+        email: currentUser ? profileEmail : 'gast@hoftausch.ch',
+        phone: currentUser ? profilePhone : 'keine',
+        message: feedbackText.trim(),
+        date: new Date().toISOString()
+      });
+      showToast('Vielen Dank für deine Nachricht! Wir haben dein Feedback empfangen.');
+      setFeedbackText('');
+    } catch (err: any) {
+      console.error("[HofTausch] Error saving feedback:", err);
+      showToast('Fehler beim Senden des Feedbacks: ' + err.message, 'error');
+    } finally {
+      setFeedbackLoading(false);
     }
   };
 
@@ -3451,11 +3480,7 @@ function App() {
               </h3>
 
               <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  showToast('Vielen Dank für deine Nachricht! Wir melden uns in Kürze.');
-                  (e.target as HTMLFormElement).reset();
-                }}
+                onSubmit={handleSendFeedback}
                 className="space-y-4"
               >
                 <div className="space-y-1.5">
@@ -3463,15 +3488,23 @@ function App() {
                   <textarea 
                     rows={4}
                     placeholder="Welche Tauschkategorien fehlen dir noch? Hast du Verbesserungsvorschläge für die Benutzeroberfläche?"
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
                     required
+                    disabled={feedbackLoading}
                   />
                 </div>
                 <button 
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-sm cursor-pointer"
+                  disabled={feedbackLoading}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-300 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-sm cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Nachricht absenden
+                  {feedbackLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Nachricht absenden'
+                  )}
                 </button>
               </form>
             </div>
