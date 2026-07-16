@@ -161,6 +161,41 @@ const getDistanceKm = (coords1: [number, number], coords2: [number, number]): nu
   return R * c;
 };
 
+const extractZipAndCity = (address: string): string => {
+  const clean = address.trim();
+  const match = clean.match(/\b\d{4}\b\s+[a-zA-ZäöüöéèàäöüÄÖÜéèàâêîôûæœ\s-]+/);
+  if (match) {
+    return match[0].trim();
+  }
+  const zipMatch = clean.match(/\b\d{4}\b/);
+  if (zipMatch) {
+    const zip = zipMatch[0];
+    const matchLoc = SWISS_LOCATIONS.find(loc => loc.plz === zip);
+    if (matchLoc) {
+      return `${zip} ${matchLoc.city}`;
+    }
+    return zip;
+  }
+  return clean;
+};
+
+const fetchCoordsForZip = async (zip: string) => {
+  try {
+    const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=zipcode&searchText=${zip}&sr=4326&limit=1`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.results && data.results.length > 0) {
+        const item = data.results[0];
+        return [parseFloat(item.attrs.lat), parseFloat(item.attrs.lon)] as [number, number];
+      }
+    }
+  } catch (err) {
+    console.warn("[HofTausch] Error fetching coords for zip:", err);
+  }
+  return null;
+};
+
 function App() {
   const [isMock] = useState(checkIsMock);
   
@@ -183,9 +218,6 @@ function App() {
   const [searchLocation, setSearchLocation] = useState('');
   const [selectedSearchCoords, setSelectedSearchCoords] = useState<[number, number] | null>(null);
   const [searchRadius, setSearchRadius] = useState<number | null>(null);
-  const [searchSuggestions, setSearchSuggestions] = useState<{ label: string; coords: [number, number] }[]>([]);
-  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
-  const [lastSelectedSearchLocation, setLastSelectedSearchLocation] = useState('');
   const [marketViewMode, setMarketViewMode] = useState<'list' | 'map'>('map');
 
   // Filter listings
@@ -510,56 +542,23 @@ function App() {
     };
   }, [currentUser]);
 
-  // Autocomplete swisstopo API query for marketplace search location input with 300ms debounce
-  useEffect(() => {
-    const cleanVal = searchLocation.trim();
-    if (cleanVal.length < 3) {
-      setSearchSuggestions([]);
-      setShowSearchSuggestions(false);
-      return;
-    }
-
-    if (lastSelectedSearchLocation === cleanVal) {
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=address&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=5`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.results) {
-            const suggestions = data.results.map((item: any) => {
-              const cleanLabel = item.attrs.label.replace(/<\/?[^>]+(>|$)/g, "").replace(/\s+/g, " ");
-              return {
-                label: cleanLabel,
-                coords: [parseFloat(item.attrs.lat), parseFloat(item.attrs.lon)] as [number, number]
-              };
-            });
-            setSearchSuggestions(suggestions);
-            setShowSearchSuggestions(suggestions.length > 0);
-          }
+  const handleSearchLocationChange = async (val: string) => {
+    const sanitized = val.replace(/\D/g, '').slice(0, 4);
+    setSearchLocation(sanitized);
+    
+    if (sanitized.length === 4) {
+      const localCoords = getCoordinatesForLocation(sanitized);
+      if (localCoords && localCoords !== SWISS_CENTER) {
+        setSelectedSearchCoords(localCoords);
+      } else {
+        const fetched = await fetchCoordsForZip(sanitized);
+        if (fetched) {
+          setSelectedSearchCoords(fetched);
+        } else {
+          setSelectedSearchCoords(SWISS_CENTER);
         }
-      } catch (err) {
-        console.warn("[HofTausch] Error fetching swisstopo search location suggestions:", err);
       }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchLocation, lastSelectedSearchLocation]);
-
-  const handleSelectSearchLocation = (suggestion: { label: string; coords: [number, number] }) => {
-    setSearchLocation(suggestion.label);
-    setLastSelectedSearchLocation(suggestion.label);
-    setSelectedSearchCoords(suggestion.coords);
-    setSearchSuggestions([]);
-    setShowSearchSuggestions(false);
-  };
-
-  const handleSearchLocationChange = (val: string) => {
-    setSearchLocation(val);
-    if (!val.trim()) {
+    } else {
       setSelectedSearchCoords(null);
     }
   };
@@ -841,7 +840,7 @@ function App() {
 
     const timer = setTimeout(async () => {
       try {
-        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=address&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=6`;
+        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=zipcode&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=6`;
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
@@ -894,7 +893,7 @@ function App() {
 
     const timer = setTimeout(async () => {
       try {
-        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=address&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=6`;
+        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=zipcode&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=6`;
         const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
@@ -1018,8 +1017,8 @@ function App() {
 
     if (selectedContactType === 'self') {
       finalFarmerName = `${profileFirstName.trim()} ${profileLastName.trim()}`;
-      finalLocation = profileAddress.trim();
-      finalContact = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${profileAddress.trim() ? ` | Adr: ${profileAddress.trim()}` : ''}`;
+      finalLocation = extractZipAndCity(profileAddress);
+      finalContact = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${finalLocation ? ` | Adr: ${finalLocation}` : ''}`;
       coords = getCoordinatesForLocation(finalLocation);
       
       // Save profile to database (and local storage fallback)
@@ -1028,14 +1027,14 @@ function App() {
         lastName: profileLastName.trim(),
         email: profileEmail.trim(),
         phone: profilePhone.trim(),
-        address: profileAddress.trim(),
+        address: finalLocation,
         confirmedAt: new Date().toISOString()
       };
       await saveUserProfile(currentUser.uid, profileData);
     } else if (selectedContactType === 'other') {
       finalFarmerName = `${alternateFirstName.trim()} ${alternateLastName.trim()}`;
-      finalLocation = alternateAddress.trim();
-      finalContact = `Tel: ${alternatePhone.trim()} | E-Mail: ${alternateEmail.trim()}${alternateAddress.trim() ? ` | Adr: ${alternateAddress.trim()}` : ''}`;
+      finalLocation = extractZipAndCity(alternateAddress);
+      finalContact = `Tel: ${alternatePhone.trim()} | E-Mail: ${alternateEmail.trim()}${finalLocation ? ` | Adr: ${finalLocation}` : ''}`;
       coords = selectedAlternateCoords || getCoordinatesForLocation(finalLocation);
 
       if (saveAlternateContact) {
@@ -1045,7 +1044,7 @@ function App() {
           lastName: alternateLastName.trim(),
           phone: alternatePhone.trim(),
           email: alternateEmail.trim(),
-          address: alternateAddress.trim(),
+          address: finalLocation,
           coordinates: coords
         };
         const updatedContacts = [...savedContacts, newContact];
@@ -1065,14 +1064,14 @@ function App() {
       const contact = savedContacts.find(c => c.id === selectedContactType);
       if (contact) {
         finalFarmerName = `${contact.firstName} ${contact.lastName}`;
-        finalLocation = contact.address;
-        finalContact = `Tel: ${contact.phone} | E-Mail: ${contact.email} | Adr: ${contact.address}`;
+        finalLocation = extractZipAndCity(contact.address);
+        finalContact = `Tel: ${contact.phone} | E-Mail: ${contact.email} | Adr: ${finalLocation}`;
         coords = contact.coordinates || getCoordinatesForLocation(finalLocation);
       } else {
         // Fallback
         finalFarmerName = `${profileFirstName.trim()} ${profileLastName.trim()}`;
-        finalLocation = profileAddress.trim();
-        finalContact = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${profileAddress.trim() ? ` | Adr: ${profileAddress.trim()}` : ''}`;
+        finalLocation = extractZipAndCity(profileAddress);
+        finalContact = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${finalLocation ? ` | Adr: ${finalLocation}` : ''}`;
         coords = getCoordinatesForLocation(finalLocation);
       }
     }
@@ -1143,18 +1142,19 @@ function App() {
     setProfileLoading(true);
     try {
       // 1. Save profile to database (and local storage fallback)
+      const zipCity = extractZipAndCity(profileAddress);
       const profileData = {
         firstName: profileFirstName.trim(),
         lastName: profileLastName.trim(),
         email: profileEmail.trim(),
         phone: profilePhone.trim(),
-        address: profileAddress.trim(),
+        address: zipCity,
         confirmedAt: new Date().toISOString()
       };
       await saveUserProfile(currentUser.uid, profileData);
 
       // Build unified contact string for own contact
-      const contactString = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${profileAddress.trim() ? ` | Adr: ${profileAddress.trim()}` : ''}`;
+      const contactString = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${zipCity ? ` | Adr: ${zipCity}` : ''}`;
 
       // 2. Execute the action
       if (pendingAction === 'create_listing') {
@@ -2093,48 +2093,26 @@ function App() {
                     </div>
 
                     <div className="space-y-3">
-                      {/* Location Input with Autocomplete */}
-                      <div className="space-y-1 relative">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Standort</label>
+                      {/* Location Input for ZIP Code only */}
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Standort (PLZ)</label>
                         <div className="relative">
                           <MapPin className="absolute left-3 top-3 w-4 h-4 text-stone-400" />
                           <input 
                             type="text" 
-                            placeholder="Ort oder PLZ..."
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            placeholder="z.B. 8057"
                             value={searchLocation}
                             onChange={(e) => handleSearchLocationChange(e.target.value)}
-                            onFocus={() => {
-                              if (searchLocation.trim().length > 0 && searchSuggestions.length > 0) {
-                                setShowSearchSuggestions(true);
-                              }
-                            }}
-                            onBlur={() => {
-                              setTimeout(() => setShowSearchSuggestions(false), 200);
-                            }}
                             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-xs"
-                            autoComplete="off"
+                            maxLength={4}
                           />
-                          
-                          {showSearchSuggestions && searchSuggestions.length > 0 && (
-                            <div className="absolute left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto divide-y divide-stone-100">
-                              {searchSuggestions.map((suggestion, idx) => (
-                                <button
-                                  key={`search-${suggestion.label}-${idx}`}
-                                  type="button"
-                                  onClick={() => handleSelectSearchLocation(suggestion)}
-                                  className="w-full px-3 py-2 text-left text-xs hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
-                                >
-                                  <span className="font-medium text-stone-850 truncate">{suggestion.label}</span>
-                                  <span className="text-[10px] text-stone-400 shrink-0">Schweiz</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       </div>
 
                       {/* Radius Selector */}
-                      {searchLocation.trim().length > 0 && (
+                      {searchLocation.trim().length === 4 && (
                         <div className="space-y-1 animate-fade-in">
                           <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Umkreis (Radius)</label>
                           <select
@@ -2343,11 +2321,11 @@ function App() {
 
                       {/* Swisstopo Autocomplete for own address */}
                       <div className="space-y-1.5 relative">
-                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (PLZ & Ort)</label>
+                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Standort (PLZ & Ort)</label>
                         <div className="relative">
                           <input 
                             type="text" 
-                            placeholder="Strasse, Nr., PLZ, Ort"
+                            placeholder="z.B. 8057 Zürich"
                             value={profileAddress}
                             onChange={(e) => handleProfileAddressChange(e.target.value)}
                             onFocus={() => {
@@ -2441,11 +2419,11 @@ function App() {
 
                       {/* Swisstopo Autocomplete for alternate address */}
                       <div className="space-y-1.5 relative">
-                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (PLZ & Ort)</label>
+                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Standort (PLZ & Ort)</label>
                         <div className="relative">
                           <input 
                             type="text" 
-                            placeholder="Strasse, Nr., PLZ, Ort"
+                            placeholder="z.B. 8057 Zürich"
                             value={alternateAddress}
                             onChange={(e) => handleAlternateAddressChange(e.target.value)}
                             onFocus={() => {
@@ -3082,11 +3060,11 @@ function App() {
 
                 {/* Adresse input (Pflichtfeld) with swisstopo autocomplete */}
                 <div className="space-y-1.5 relative">
-                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (Pflichtfeld)</label>
+                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Standort (PLZ & Ort)</label>
                   <div className="relative">
                     <input 
                       type="text" 
-                      placeholder="Strasse, Nr., PLZ, Ort"
+                      placeholder="z.B. 8057 Zürich"
                       value={profileAddress}
                       onChange={(e) => handleProfileAddressChange(e.target.value)}
                       onFocus={() => {
