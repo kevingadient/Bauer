@@ -202,10 +202,27 @@ function App() {
   const [showConfirmContactModal, setShowConfirmContactModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<'create_listing' | 'send_request' | null>(null);
   
+  const [profileFirstName, setProfileFirstName] = useState('');
+  const [profileLastName, setProfileLastName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
   const [profileAddress, setProfileAddress] = useState('');
   const [profileCheckbox, setProfileCheckbox] = useState(false);
+  const [profileFirstNameError, setProfileFirstNameError] = useState('');
+  const [profileLastNameError, setProfileLastNameError] = useState('');
+  
+  const [savedContacts, setSavedContacts] = useState<any[]>([]);
+  const [selectedContactType, setSelectedContactType] = useState<string>('self');
+  const [alternateFirstName, setAlternateFirstName] = useState('');
+  const [alternateLastName, setAlternateLastName] = useState('');
+  const [alternatePhone, setAlternatePhone] = useState('');
+  const [alternateEmail, setAlternateEmail] = useState('');
+  const [alternateAddress, setAlternateAddress] = useState('');
+  const [saveAlternateContact, setSaveAlternateContact] = useState(false);
+  const [alternateAddressSuggestions, setAlternateAddressSuggestions] = useState<{ label: string; coords: [number, number] }[]>([]);
+  const [showAlternateAddressSuggestions, setShowAlternateAddressSuggestions] = useState(false);
+  const [selectedAlternateCoords, setSelectedAlternateCoords] = useState<[number, number] | null>(null);
+  const [lastSelectedAlternateAddress, setLastSelectedAlternateAddress] = useState('');
   
   const [profileEmailError, setProfileEmailError] = useState('');
   const [profilePhoneError, setProfilePhoneError] = useState('');
@@ -219,12 +236,7 @@ function App() {
   const [newCategory, setNewCategory] = useState<Listing['category']>('Futter');
   const [newOffer, setNewOffer] = useState('');
   const [newSeek, setNewSeek] = useState('');
-  const [newAddress, setNewAddress] = useState('');
-  const [addressSuggestions, setAddressSuggestions] = useState<{ label: string; coords: [number, number] }[]>([]);
-  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
-  const [selectedAddressCoords, setSelectedAddressCoords] = useState<[number, number] | null>(null);
-  const [lastSelectedAddress, setLastSelectedAddress] = useState('');
-  const [newFarmerName, setNewFarmerName] = useState('');
+
 
   // Exchange request form state
   const [reqOfferedItem, setReqOfferedItem] = useState('');
@@ -257,14 +269,20 @@ function App() {
         try {
           const profile = await getUserProfile(user.uid);
           if (profile) {
+            setProfileFirstName(profile.firstName || '');
+            setProfileLastName(profile.lastName || '');
             setProfileEmail(profile.email || user.email || '');
             setProfilePhone(profile.phone || user.phoneNumber || '');
             setProfileAddress(profile.address || '');
+            setSavedContacts(profile.savedContacts || []);
             setIsAdmin(profile.role === 'admin');
           } else {
+            setProfileFirstName('');
+            setProfileLastName('');
             setProfileEmail(user.email || '');
             setProfilePhone(user.phoneNumber || '');
             setProfileAddress('');
+            setSavedContacts([]);
             setIsAdmin(false);
           }
         } catch (e) {
@@ -594,61 +612,6 @@ function App() {
     window.location.search = '?magic-link=true';
   };
 
-  // Address Autocomplete Helper
-  const handleAddressChange = (val: string) => {
-    setNewAddress(val);
-    setSelectedAddressCoords(null); // Clear precise coordinates because text was manually updated
-  };
-
-  const handleSelectAddress = (suggestion: { label: string; coords: [number, number] }) => {
-    setNewAddress(suggestion.label);
-    setLastSelectedAddress(suggestion.label);
-    setSelectedAddressCoords(suggestion.coords);
-    setAddressSuggestions([]);
-    setShowAddressSuggestions(false);
-  };
-
-  // Address autocomplete Swisstopo API query with 300ms debounce
-  useEffect(() => {
-    const cleanVal = newAddress.trim();
-    if (cleanVal.length < 3) {
-      setAddressSuggestions([]);
-      setShowAddressSuggestions(false);
-      return;
-    }
-
-    // Do not search if the value matches the last selected address suggestion
-    if (lastSelectedAddress === cleanVal) {
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=address&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=6`;
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.results) {
-            const suggestions = data.results.map((item: any) => {
-              // Strip HTML tags like <b> from the search label
-              const cleanLabel = item.attrs.label.replace(/<\/?[^>]+(>|$)/g, "").replace(/\s+/g, " ");
-              return {
-                label: cleanLabel,
-                coords: [parseFloat(item.attrs.lat), parseFloat(item.attrs.lon)] as [number, number]
-              };
-            });
-            setAddressSuggestions(suggestions);
-            setShowAddressSuggestions(suggestions.length > 0);
-          }
-        }
-      } catch (err) {
-        console.warn("[HofTausch] Error fetching swisstopo address suggestions:", err);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [newAddress, lastSelectedAddress]);
-
   // Profile Address Autocomplete Helper
   const handleProfileAddressChange = (val: string) => {
     setProfileAddress(val);
@@ -700,6 +663,59 @@ function App() {
     return () => clearTimeout(timer);
   }, [profileAddress, lastSelectedProfileAddress]);
 
+  // Alternate Address Autocomplete Helper
+  const handleAlternateAddressChange = (val: string) => {
+    setAlternateAddress(val);
+    setSelectedAlternateCoords(null);
+  };
+
+  const handleSelectAlternateAddress = (suggestion: { label: string; coords: [number, number] }) => {
+    setAlternateAddress(suggestion.label);
+    setLastSelectedAlternateAddress(suggestion.label);
+    setSelectedAlternateCoords(suggestion.coords);
+    setAlternateAddressSuggestions([]);
+    setShowAlternateAddressSuggestions(false);
+  };
+
+  // Alternate Address autocomplete Swisstopo API query with 300ms debounce
+  useEffect(() => {
+    const cleanVal = alternateAddress.trim();
+    if (cleanVal.length < 3) {
+      setAlternateAddressSuggestions([]);
+      setShowAlternateAddressSuggestions(false);
+      return;
+    }
+
+    if (lastSelectedAlternateAddress === cleanVal) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=address&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=6`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.results) {
+            const suggestions = data.results.map((item: any) => {
+              const cleanLabel = item.attrs.label.replace(/<\/?[^>]+(>|$)/g, "").replace(/\s+/g, " ");
+              return {
+                label: cleanLabel,
+                coords: [parseFloat(item.attrs.lat), parseFloat(item.attrs.lon)] as [number, number]
+              };
+            });
+            setAlternateAddressSuggestions(suggestions);
+            setShowAlternateAddressSuggestions(suggestions.length > 0);
+          }
+        }
+      } catch (err) {
+        console.warn("[HofTausch] Error fetching swisstopo alternate address suggestions:", err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [alternateAddress, lastSelectedAlternateAddress]);
+
   // Listing Handlers
   const handleStartEdit = (listing: Listing) => {
     setEditingListing(listing);
@@ -707,8 +723,41 @@ function App() {
     setNewCategory(listing.category);
     setNewOffer(listing.descriptionOffer);
     setNewSeek(listing.descriptionSeek);
-    setNewAddress(listing.location);
-    setNewFarmerName(listing.farmerName);
+    
+    const ownName = `${profileFirstName.trim()} ${profileLastName.trim()}`;
+    if (listing.farmerName === ownName && listing.location === profileAddress) {
+      setSelectedContactType('self');
+    } else {
+      const saved = savedContacts.find(c => `${c.firstName} ${c.lastName}` === listing.farmerName && c.address === listing.location);
+      if (saved) {
+        setSelectedContactType(saved.id);
+        setAlternateFirstName(saved.firstName);
+        setAlternateLastName(saved.lastName);
+        setAlternatePhone(saved.phone);
+        setAlternateEmail(saved.email);
+        setAlternateAddress(saved.address);
+        setSelectedAlternateCoords(saved.coordinates);
+      } else {
+        setSelectedContactType('other');
+        const nameParts = listing.farmerName.split(' ');
+        setAlternateFirstName(nameParts[0] || '');
+        setAlternateLastName(nameParts.slice(1).join(' ') || '');
+        setAlternateAddress(listing.location);
+        
+        let parsedPhone = '';
+        let parsedEmail = '';
+        if (listing.contact) {
+          const phoneMatch = listing.contact.match(/Tel:\s*([^|]+)/);
+          const emailMatch = listing.contact.match(/E-Mail:\s*([^|]+)/);
+          if (phoneMatch) parsedPhone = phoneMatch[1].trim();
+          if (emailMatch) parsedEmail = emailMatch[1].trim();
+        }
+        setAlternatePhone(parsedPhone);
+        setAlternateEmail(parsedEmail);
+        setSelectedAlternateCoords(listing.coordinates || null);
+      }
+    }
+    
     setActiveTab('create');
   };
 
@@ -741,15 +790,145 @@ function App() {
     return true;
   };
 
+  const validateProfileFirstName = (val: string) => {
+    if (!val.trim()) {
+      setProfileFirstNameError('Vorname ist erforderlich.');
+      return false;
+    }
+    setProfileFirstNameError('');
+    return true;
+  };
+
+  const validateProfileLastName = (val: string) => {
+    if (!val.trim()) {
+      setProfileLastNameError('Nachname ist erforderlich.');
+      return false;
+    }
+    setProfileLastNameError('');
+    return true;
+  };
+
+  const executeCreateOrUpdateListing = async () => {
+    let finalFarmerName = '';
+    let finalLocation = '';
+    let finalContact = '';
+    let coords: [number, number] | undefined = undefined;
+
+    if (selectedContactType === 'self') {
+      finalFarmerName = `${profileFirstName.trim()} ${profileLastName.trim()}`;
+      finalLocation = profileAddress.trim();
+      finalContact = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${profileAddress.trim() ? ` | Adr: ${profileAddress.trim()}` : ''}`;
+      coords = getCoordinatesForLocation(finalLocation);
+      
+      // Save profile to database (and local storage fallback)
+      const profileData = {
+        firstName: profileFirstName.trim(),
+        lastName: profileLastName.trim(),
+        email: profileEmail.trim(),
+        phone: profilePhone.trim(),
+        address: profileAddress.trim(),
+        confirmedAt: new Date().toISOString()
+      };
+      await saveUserProfile(currentUser.uid, profileData);
+    } else if (selectedContactType === 'other') {
+      finalFarmerName = `${alternateFirstName.trim()} ${alternateLastName.trim()}`;
+      finalLocation = alternateAddress.trim();
+      finalContact = `Tel: ${alternatePhone.trim()} | E-Mail: ${alternateEmail.trim()}${alternateAddress.trim() ? ` | Adr: ${alternateAddress.trim()}` : ''}`;
+      coords = selectedAlternateCoords || getCoordinatesForLocation(finalLocation);
+
+      if (saveAlternateContact) {
+        const newContact = {
+          id: Date.now().toString(),
+          firstName: alternateFirstName.trim(),
+          lastName: alternateLastName.trim(),
+          phone: alternatePhone.trim(),
+          email: alternateEmail.trim(),
+          address: alternateAddress.trim(),
+          coordinates: coords
+        };
+        const updatedContacts = [...savedContacts, newContact];
+        setSavedContacts(updatedContacts);
+        await saveUserProfile(currentUser.uid, { savedContacts: updatedContacts });
+        // Reset alternate contact fields
+        setAlternateFirstName('');
+        setAlternateLastName('');
+        setAlternatePhone('');
+        setAlternateEmail('');
+        setAlternateAddress('');
+        setSaveAlternateContact(false);
+        setSelectedAlternateCoords(null);
+      }
+    } else {
+      // It's a saved contact ID!
+      const contact = savedContacts.find(c => c.id === selectedContactType);
+      if (contact) {
+        finalFarmerName = `${contact.firstName} ${contact.lastName}`;
+        finalLocation = contact.address;
+        finalContact = `Tel: ${contact.phone} | E-Mail: ${contact.email} | Adr: ${contact.address}`;
+        coords = contact.coordinates || getCoordinatesForLocation(finalLocation);
+      } else {
+        // Fallback
+        finalFarmerName = `${profileFirstName.trim()} ${profileLastName.trim()}`;
+        finalLocation = profileAddress.trim();
+        finalContact = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${profileAddress.trim() ? ` | Adr: ${profileAddress.trim()}` : ''}`;
+        coords = getCoordinatesForLocation(finalLocation);
+      }
+    }
+
+    if (editingListing) {
+      await updateListing(editingListing.id, {
+        title: newTitle,
+        category: newCategory,
+        descriptionOffer: newOffer,
+        descriptionSeek: newSeek,
+        location: finalLocation,
+        farmerName: finalFarmerName,
+        contact: finalContact,
+        coordinates: coords
+      });
+      showToast('Inserat erfolgreich aktualisiert!');
+      setEditingListing(null);
+    } else {
+      const dateToday = new Date();
+      const dateString = dateToday.toISOString().split('T')[0];
+      const expiryDate = new Date(dateToday.getTime() + 21 * 24 * 60 * 60 * 1000);
+      const expiryDateString = expiryDate.toISOString().split('T')[0];
+
+      await addListing({
+        title: newTitle,
+        category: newCategory,
+        descriptionOffer: newOffer,
+        descriptionSeek: newSeek,
+        location: finalLocation,
+        farmerName: finalFarmerName,
+        contact: finalContact,
+        date: dateString,
+        expiryDate: expiryDateString,
+        userId: currentUser.uid,
+        coordinates: coords
+      });
+      showToast('Inserat erfolgreich veröffentlicht!');
+    }
+
+    // Reset Form
+    setNewTitle('');
+    setNewOffer('');
+    setNewSeek('');
+    setSelectedContactType('self');
+    setActiveTab('my-listings');
+  };
+
   // Submission handler after user confirms their contact details in the modal
   const handleConfirmProfileAndSubmit = async () => {
     if (!currentUser) return;
     
     // Validate both fields
+    const isFirstNameValid = validateProfileFirstName(profileFirstName);
+    const isLastNameValid = validateProfileLastName(profileLastName);
     const isEmailValid = validateProfileEmail(profileEmail);
     const isPhoneValid = validateProfilePhone(profilePhone);
     
-    if (!isEmailValid || !isPhoneValid) {
+    if (!isFirstNameValid || !isLastNameValid || !isEmailValid || !isPhoneValid) {
       showToast('Bitte korrigiere die Fehler in deinen Kontaktdaten.', 'error');
       return;
     }
@@ -763,6 +942,8 @@ function App() {
     try {
       // 1. Save profile to database (and local storage fallback)
       const profileData = {
+        firstName: profileFirstName.trim(),
+        lastName: profileLastName.trim(),
         email: profileEmail.trim(),
         phone: profilePhone.trim(),
         address: profileAddress.trim(),
@@ -770,59 +951,12 @@ function App() {
       };
       await saveUserProfile(currentUser.uid, profileData);
 
-      // Build unified contact string for the database entry
+      // Build unified contact string for own contact
       const contactString = `Tel: ${profilePhone.trim()} | E-Mail: ${profileEmail.trim()}${profileAddress.trim() ? ` | Adr: ${profileAddress.trim()}` : ''}`;
-      const fullLocation = newAddress.trim();
 
       // 2. Execute the action
       if (pendingAction === 'create_listing') {
-        const coords = selectedAddressCoords || getCoordinatesForLocation(fullLocation);
-
-        if (editingListing) {
-          // Update existing listing
-          await updateListing(editingListing.id, {
-            title: newTitle,
-            category: newCategory,
-            descriptionOffer: newOffer,
-            descriptionSeek: newSeek,
-            location: fullLocation,
-            farmerName: newFarmerName,
-            contact: contactString,
-            coordinates: coords
-          });
-          showToast('Inserat erfolgreich aktualisiert!');
-          setEditingListing(null);
-        } else {
-          // Create new listing
-          const dateToday = new Date();
-          const dateString = dateToday.toISOString().split('T')[0];
-          const expiryDate = new Date(dateToday.getTime() + 21 * 24 * 60 * 60 * 1000);
-          const expiryDateString = expiryDate.toISOString().split('T')[0];
-
-          await addListing({
-            title: newTitle,
-            category: newCategory,
-            descriptionOffer: newOffer,
-            descriptionSeek: newSeek,
-            location: fullLocation,
-            farmerName: newFarmerName,
-            contact: contactString,
-            date: dateString,
-            expiryDate: expiryDateString,
-            userId: currentUser.uid,
-            coordinates: coords
-          });
-          showToast('Inserat erfolgreich veröffentlicht!');
-        }
-
-        // Reset Form
-        setNewTitle('');
-        setNewOffer('');
-        setNewSeek('');
-        setNewAddress('');
-        setNewFarmerName('');
-        setActiveTab('my-listings');
-
+        await executeCreateOrUpdateListing();
       } else if (pendingAction === 'send_request') {
         if (!selectedListing) return;
 
@@ -833,7 +967,7 @@ function App() {
           offeredItem: reqOfferedItem,
           message: reqMessage,
           contactDetails: contactString,
-          farmerName: reqFarmerName,
+          farmerName: `${profileFirstName.trim()} ${profileLastName.trim()}`,
           status: 'offen',
           date: new Date().toISOString().split('T')[0],
           senderId: currentUser.uid,
@@ -847,7 +981,6 @@ function App() {
         setReqMessage('');
         setReqFarmerName('');
         setIsExchangeModalOpen(false);
-        setSelectedListing(null);
       }
 
       // Close modal and reset state
@@ -869,22 +1002,70 @@ function App() {
       console.warn("[HofTausch] Attempted to create/edit listing, but user is not logged in!");
       return;
     }
-    if (!newTitle || !newOffer || !newSeek || !newAddress || !newFarmerName) {
-      showToast('Bitte fülle alle Felder aus!', 'error');
+    if (!newTitle || !newOffer || !newSeek) {
+      showToast('Bitte fülle alle Inserat-Felder aus!', 'error');
       return;
     }
 
-    // Intercept: Set pending action and open contact confirmation modal
-    setPendingAction('create_listing');
-    setShowConfirmContactModal(true);
+    // Validate the selected contact details
+    if (selectedContactType === 'self') {
+      const isFirstNameValid = validateProfileFirstName(profileFirstName);
+      const isLastNameValid = validateProfileLastName(profileLastName);
+      const isEmailValid = validateProfileEmail(profileEmail);
+      const isPhoneValid = validateProfilePhone(profilePhone);
+      
+      if (!isFirstNameValid || !isLastNameValid || !isEmailValid || !isPhoneValid) {
+        showToast('Bitte fülle deine eigenen Kontaktdaten korrekt aus.', 'error');
+        return;
+      }
+    } else if (selectedContactType === 'other') {
+      if (!alternateFirstName.trim() || !alternateLastName.trim() || !alternatePhone.trim() || !alternateEmail.trim() || !alternateAddress.trim()) {
+        showToast('Bitte fülle alle Kontaktdaten der anderen Person aus.', 'error');
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(alternateEmail.trim())) {
+        showToast('Ungültige E-Mail-Adresse für die andere Person.', 'error');
+        return;
+      }
+      const phoneRegex = /^(\+41|0041|0)\s*[1-9](\s*[0-9]){8}$/;
+      if (!phoneRegex.test(alternatePhone.trim().replace(/[\s()-]/g, ''))) {
+        showToast('Ungültige Schweizer Telefonnummer für die andere Person.', 'error');
+        return;
+      }
+    }
+
+    // Check if the user's own profile is complete/confirmed.
+    // If not, we trigger the Confirm Profile Modal first!
+    if (!profileFirstName.trim() || !profileLastName.trim() || !profileAddress.trim() || !profileEmail.trim() || !profilePhone.trim()) {
+      setPendingAction('create_listing');
+      setShowConfirmContactModal(true);
+      return;
+    }
+
+    setProfileLoading(true);
+    try {
+      await executeCreateOrUpdateListing();
+    } catch (error: any) {
+      console.error("[HofTausch] Error creating/updating listing:", error);
+      showToast('Fehler beim Veröffentlichen: ' + error.message, 'error');
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleCancelCreateOrEdit = () => {
     setNewTitle('');
     setNewOffer('');
     setNewSeek('');
-    setNewAddress('');
-    setNewFarmerName('');
+    setSelectedContactType('self');
+    setAlternateFirstName('');
+    setAlternateLastName('');
+    setAlternatePhone('');
+    setAlternateEmail('');
+    setAlternateAddress('');
+    setSaveAlternateContact(false);
+    setSelectedAlternateCoords(null);
     setEditingListing(null);
     setPendingAction(null);
     setActiveTab(editingListing ? 'my-listings' : 'market');
@@ -1806,58 +1987,255 @@ function App() {
 
                 <hr className="border-stone-200/60 my-6" />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Hofname / Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="z.B. Tobler-Hof"
-                      value={newFarmerName}
-                      onChange={(e) => setNewFarmerName(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-1.5 relative">
-                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (PLZ & Ort)</label>
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        placeholder="z.B. 8001 Zürich oder Bern"
-                        value={newAddress}
-                        onChange={(e) => handleAddressChange(e.target.value)}
-                        onFocus={() => {
-                          if (newAddress.trim().length > 0 && addressSuggestions.length > 0) {
-                            setShowAddressSuggestions(true);
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Ansprechpartner für dieses Inserat</label>
+                    <select 
+                      value={selectedContactType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedContactType(val);
+                        if (val !== 'self' && val !== 'other') {
+                          // Pre-fill alternate fields with selected saved contact to show them
+                          const contact = savedContacts.find(c => c.id === val);
+                          if (contact) {
+                            setAlternateFirstName(contact.firstName);
+                            setAlternateLastName(contact.lastName);
+                            setAlternatePhone(contact.phone);
+                            setAlternateEmail(contact.email);
+                            setAlternateAddress(contact.address);
+                            setSelectedAlternateCoords(contact.coordinates);
                           }
-                        }}
-                        onBlur={() => {
-                          // delay hiding so that clicks on suggestions are registered
-                          setTimeout(() => setShowAddressSuggestions(false), 200);
-                        }}
-                        className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
-                        required
-                        autoComplete="off"
-                      />
+                        } else if (val === 'other') {
+                          // Clear alternate fields
+                          setAlternateFirstName('');
+                          setAlternateLastName('');
+                          setAlternatePhone('');
+                          setAlternateEmail('');
+                          setAlternateAddress('');
+                          setSelectedAlternateCoords(null);
+                        }
+                      }}
+                      className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm cursor-pointer"
+                    >
+                      <option value="self">Meine eigenen Kontaktdaten ({profileFirstName} {profileLastName})</option>
+                      <option value="other">Für eine andere Person inserieren (Neuer Kontakt)...</option>
+                      {savedContacts.map(contact => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.firstName} {contact.lastName} (Gespeichert: {contact.address})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Eigene Kontaktdaten Inputs (shown and editable when 'self' is selected) */}
+                  {selectedContactType === 'self' && (
+                    <div className="bg-stone-50/60 border border-stone-200/50 rounded-2xl p-4 sm:p-5 space-y-4">
+                      <span className="text-[10px] font-bold text-stone-450 uppercase tracking-wider block">Deine eigenen Profildaten (werden in DB gespeichert)</span>
                       
-                      {showAddressSuggestions && addressSuggestions.length > 0 && (
-                        <div className="absolute left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto divide-y divide-stone-100">
-                           {addressSuggestions.map((suggestion, idx) => (
-                            <button
-                              key={`${suggestion.label}-${idx}`}
-                              type="button"
-                              onClick={() => handleSelectAddress(suggestion)}
-                              className="w-full px-4 py-3 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
-                            >
-                              <span className="font-medium text-stone-800">{suggestion.label}</span>
-                              <span className="text-xs text-stone-400">Schweiz 🇨🇭</span>
-                            </button>
-                          ))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Vorname</label>
+                          <input 
+                            type="text" 
+                            placeholder="Z.B. Josef"
+                            value={profileFirstName}
+                            onChange={(e) => setProfileFirstName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Nachname</label>
+                          <input 
+                            type="text" 
+                            placeholder="Z.B. Muster"
+                            value={profileLastName}
+                            onChange={(e) => setProfileLastName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Telefonnummer</label>
+                          <input 
+                            type="text" 
+                            placeholder="Z.B. +41 79 123 45 67"
+                            value={profilePhone}
+                            onChange={(e) => setProfilePhone(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">E-Mail-Adresse</label>
+                          <input 
+                            type="email" 
+                            placeholder="Z.B. name@domain.ch"
+                            value={profileEmail}
+                            onChange={(e) => setProfileEmail(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Swisstopo Autocomplete for own address */}
+                      <div className="space-y-1.5 relative">
+                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (PLZ & Ort)</label>
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            placeholder="Strasse, Nr., PLZ, Ort"
+                            value={profileAddress}
+                            onChange={(e) => handleProfileAddressChange(e.target.value)}
+                            onFocus={() => {
+                              if (profileAddress.trim().length > 0 && profileAddressSuggestions.length > 0) {
+                                setShowProfileAddressSuggestions(true);
+                              }
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setShowProfileAddressSuggestions(false), 205);
+                            }}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                            autoComplete="off"
+                          />
+                          {showProfileAddressSuggestions && profileAddressSuggestions.length > 0 && (
+                            <div className="absolute left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto divide-y divide-stone-100">
+                               {profileAddressSuggestions.map((suggestion, idx) => (
+                                <button
+                                  key={`${suggestion.label}-${idx}`}
+                                  type="button"
+                                  onClick={() => handleSelectProfileAddress(suggestion)}
+                                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
+                                >
+                                  <span className="font-medium text-stone-800">{suggestion.label}</span>
+                                  <span className="text-xs text-stone-400">Schweiz 🇨🇭</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Alternate Contact or Saved Contact Fields */}
+                  {selectedContactType !== 'self' && (
+                    <div className="bg-amber-50/20 border border-amber-200/50 rounded-2xl p-4 sm:p-5 space-y-4 animate-fade-in">
+                      <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                        {selectedContactType === 'other' ? 'Kontaktdaten der fremden Person eingeben' : 'Kontaktdaten (Gespeichert, können angepasst werden)'}
+                      </span>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Vorname</label>
+                          <input 
+                            type="text" 
+                            placeholder="Z.B. Peter"
+                            value={alternateFirstName}
+                            onChange={(e) => setAlternateFirstName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Nachname</label>
+                          <input 
+                            type="text" 
+                            placeholder="Z.B. Keller"
+                            value={alternateLastName}
+                            onChange={(e) => setAlternateLastName(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Telefonnummer</label>
+                          <input 
+                            type="text" 
+                            placeholder="Z.B. +41 79 987 65 43"
+                            value={alternatePhone}
+                            onChange={(e) => setAlternatePhone(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">E-Mail-Adresse</label>
+                          <input 
+                            type="email" 
+                            placeholder="Z.B. peter@domain.ch"
+                            value={alternateEmail}
+                            onChange={(e) => setAlternateEmail(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      {/* Swisstopo Autocomplete for alternate address */}
+                      <div className="space-y-1.5 relative">
+                        <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (PLZ & Ort)</label>
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            placeholder="Strasse, Nr., PLZ, Ort"
+                            value={alternateAddress}
+                            onChange={(e) => handleAlternateAddressChange(e.target.value)}
+                            onFocus={() => {
+                              if (alternateAddress.trim().length > 0 && alternateAddressSuggestions.length > 0) {
+                                setShowAlternateAddressSuggestions(true);
+                              }
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setShowAlternateAddressSuggestions(false), 205);
+                            }}
+                            className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                            required
+                            autoComplete="off"
+                          />
+                          {showAlternateAddressSuggestions && alternateAddressSuggestions.length > 0 && (
+                            <div className="absolute left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto divide-y divide-stone-100">
+                               {alternateAddressSuggestions.map((suggestion, idx) => (
+                                <button
+                                  key={`${suggestion.label}-${idx}`}
+                                  type="button"
+                                  onClick={() => handleSelectAlternateAddress(suggestion)}
+                                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
+                                >
+                                  <span className="font-medium text-stone-800">{suggestion.label}</span>
+                                  <span className="text-xs text-stone-400">Schweiz 🇨🇭</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedContactType === 'other' && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <input 
+                            type="checkbox" 
+                            id="saveAlternateContact"
+                            checked={saveAlternateContact}
+                            onChange={(e) => setSaveAlternateContact(e.target.checked)}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-stone-300"
+                          />
+                          <label htmlFor="saveAlternateContact" className="text-xs text-stone-600 font-semibold select-none cursor-pointer">
+                            Diesen Kontakt für zukünftige Inserate in meiner Liste speichern
+                          </label>
                         </div>
                       )}
                     </div>
-                  </div>
+                  )}
                 </div>
 
               </div>
@@ -2339,6 +2717,59 @@ function App() {
               </p>
 
               <div className="space-y-4">
+                {/* Vorname & Nachname */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Vorname (Pflichtfeld)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Z.B. Josef"
+                      value={profileFirstName}
+                      onChange={(e) => {
+                        setProfileFirstName(e.target.value);
+                        validateProfileFirstName(e.target.value);
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl border bg-stone-50 focus:bg-white focus:ring-2 focus:outline-none transition-all duration-200 text-sm ${
+                        profileFirstNameError 
+                          ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' 
+                          : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                      }`}
+                      required
+                    />
+                    {profileFirstNameError && (
+                      <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {profileFirstNameError}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Nachname (Pflichtfeld)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Z.B. Muster"
+                      value={profileLastName}
+                      onChange={(e) => {
+                        setProfileLastName(e.target.value);
+                        validateProfileLastName(e.target.value);
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl border bg-stone-50 focus:bg-white focus:ring-2 focus:outline-none transition-all duration-200 text-sm ${
+                        profileLastNameError 
+                          ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' 
+                          : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                      }`}
+                      required
+                    />
+                    {profileLastNameError && (
+                      <p className="text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        {profileLastNameError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* E-Mail input */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">E-Mail-Adresse (Pflichtfeld)</label>
@@ -2391,13 +2822,13 @@ function App() {
                   )}
                 </div>
 
-                {/* Adresse input (optional) with swisstopo autocomplete */}
+                {/* Adresse input (Pflichtfeld) with swisstopo autocomplete */}
                 <div className="space-y-1.5 relative">
-                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse (Optional)</label>
+                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Adresse / Standort (Pflichtfeld)</label>
                   <div className="relative">
                     <input 
                       type="text" 
-                      placeholder="Strasse, Nr., PLZ, Ort (falls abweichend)"
+                      placeholder="Strasse, Nr., PLZ, Ort"
                       value={profileAddress}
                       onChange={(e) => handleProfileAddressChange(e.target.value)}
                       onFocus={() => {
@@ -2410,6 +2841,7 @@ function App() {
                         setTimeout(() => setShowProfileAddressSuggestions(false), 200);
                       }}
                       className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                      required
                       autoComplete="off"
                     />
                     

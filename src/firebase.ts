@@ -368,10 +368,13 @@ export const getUserProfile = async (uid: string): Promise<any | null> => {
     // Default admin mock profile for Josef to allow instant local admin role testing
     if (uid === 'mock_user_google_josef') {
       return {
+        firstName: 'Josef',
+        lastName: 'Muster',
         email: 'josef.google@landwirt.de',
         phone: '+41 79 123 45 67',
         address: 'Gorwiden 32, 8057 Zürich',
-        role: 'admin'
+        role: 'admin',
+        savedContacts: []
       };
     }
     return null;
