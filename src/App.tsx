@@ -331,12 +331,15 @@ function App() {
       const target = e.target as HTMLElement;
       const interactiveEl = target.closest('button, a, [role="button"]');
       if (interactiveEl) {
-        const text = interactiveEl.textContent?.trim().substring(0, 50) || '';
+        const text = interactiveEl.textContent?.trim().substring(0, 40) || '';
         const id = interactiveEl.id || '';
         const role = interactiveEl.getAttribute('role') || '';
         const label = interactiveEl.getAttribute('aria-label') || '';
         
-        umami.track('Click', {
+        const descriptor = text || id || label || interactiveEl.tagName.toLowerCase();
+        const eventName = `Click: ${descriptor}`;
+        
+        umami.track(eventName, {
           element: interactiveEl.tagName.toLowerCase(),
           id: id || undefined,
           text: text || undefined,
