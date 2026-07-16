@@ -1527,7 +1527,7 @@ function App() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
               <Handshake className="w-6 h-6" />
@@ -1541,7 +1541,7 @@ function App() {
           <nav className="hidden md:flex items-center gap-2">
             <button 
               onClick={() => setActiveTab('landing')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 border ${
+              className={`w-36 lg:w-40 xl:w-44 h-11 flex items-center justify-center rounded-xl font-medium text-xs lg:text-sm transition-all duration-200 border ${
                 activeTab === 'landing' 
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
                   : 'border-stone-200 text-stone-600 hover:bg-stone-100'
@@ -1551,7 +1551,7 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('market')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 border ${
+              className={`w-36 lg:w-40 xl:w-44 h-11 flex items-center justify-center rounded-xl font-medium text-xs lg:text-sm transition-all duration-200 border ${
                 activeTab === 'market' 
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
                   : 'border-stone-200 text-stone-600 hover:bg-stone-100'
@@ -1561,17 +1561,17 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('create')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-bold text-sm transition-all duration-200 gap-2 cursor-pointer shadow-sm border ${
+              className={`w-36 lg:w-40 xl:w-44 h-11 flex items-center justify-center rounded-xl font-bold text-xs lg:text-sm transition-all duration-200 gap-1.5 cursor-pointer shadow-sm border ${
                 activeTab === 'create' 
                   ? 'bg-emerald-700 border-emerald-700 text-white shadow-inner ring-2 ring-emerald-700/10' 
                   : 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md shadow-emerald-650/20'
               }`}
             >
-              <PlusCircle className="w-4 h-4" /> Inserat erstellen
+              <PlusCircle className="hidden lg:inline-block w-4 h-4 shrink-0" /> Inserat erstellen
             </button>
             <button 
               onClick={() => setActiveTab('my-listings')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 relative border ${
+              className={`w-36 lg:w-40 xl:w-44 h-11 flex items-center justify-center rounded-xl font-medium text-xs lg:text-sm transition-all duration-200 relative border ${
                 activeTab === 'my-listings' 
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
                   : 'border-stone-200 text-stone-600 hover:bg-stone-100'
@@ -1586,7 +1586,7 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('my-requests')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 border ${
+              className={`w-36 lg:w-40 xl:w-44 h-11 flex items-center justify-center rounded-xl font-medium text-xs lg:text-sm transition-all duration-200 border ${
                 activeTab === 'my-requests' 
                   ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
                   : 'border-stone-200 text-stone-600 hover:bg-stone-100'
