@@ -1541,7 +1541,7 @@ function App() {
           <nav className="hidden md:flex items-center gap-2">
             <button 
               onClick={() => setActiveTab('landing')}
-              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 ${
                 activeTab === 'landing' 
                   ? 'bg-emerald-600 text-white shadow-sm' 
                   : 'text-stone-600 hover:bg-stone-100'
@@ -1551,7 +1551,7 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('market')}
-              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 ${
                 activeTab === 'market' 
                   ? 'bg-emerald-600 text-white shadow-sm' 
                   : 'text-stone-600 hover:bg-stone-100'
@@ -1561,7 +1561,7 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('create')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-sm ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-bold text-sm transition-all duration-200 gap-2 cursor-pointer shadow-sm ${
                 activeTab === 'create' 
                   ? 'bg-emerald-700 text-white shadow-inner ring-2 ring-emerald-700/10' 
                   : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md shadow-emerald-650/20'
@@ -1571,13 +1571,13 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('my-listings')}
-              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 relative ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 relative ${
                 activeTab === 'my-listings' 
                   ? 'bg-emerald-600 text-white shadow-sm' 
                   : 'text-stone-600 hover:bg-stone-100'
               }`}
             >
-              Meine Inserate & Anfragen
+              Meine Inserate
               {requests.filter(r => listings.filter(l => l.userId === currentUser.uid).map(l => l.id).includes(r.listingId) && r.status === 'offen').length > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[10px] font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center border-2 border-white">
                   {requests.filter(r => listings.filter(l => l.userId === currentUser.uid).map(l => l.id).includes(r.listingId) && r.status === 'offen').length}
@@ -1586,7 +1586,7 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('my-requests')}
-              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 ${
                 activeTab === 'my-requests' 
                   ? 'bg-emerald-600 text-white shadow-sm' 
                   : 'text-stone-600 hover:bg-stone-100'
