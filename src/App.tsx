@@ -237,6 +237,7 @@ function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
 
   // Blog creation modal state variables
   const [showWritePostModal, setShowWritePostModal] = useState(false);
@@ -3354,7 +3355,15 @@ function App() {
                   else if (post.category === 'Wissen') catColorClass = 'bg-blue-50 text-blue-700 border-blue-150';
 
                   return (
-                    <div key={post.id} className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all duration-300 relative group">
+                    <div 
+                      key={post.id} 
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.closest('.delete-post-btn')) return;
+                        setSelectedBlogPost(post);
+                      }}
+                      className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all duration-300 relative group cursor-pointer hover:border-emerald-500/40"
+                    >
                       {isAdmin && (
                         <button
                           onClick={async () => {
@@ -3367,7 +3376,7 @@ function App() {
                               }
                             }
                           }}
-                          className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/90 border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-150 shadow-sm z-10"
+                          className="delete-post-btn absolute top-3 right-3 p-1.5 rounded-lg bg-white/90 border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-150 shadow-sm z-10 cursor-pointer"
                           title="Beitrag löschen"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -4043,6 +4052,62 @@ function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Blog Post Detail Modal */}
+      {selectedBlogPost && (
+        <div className="fixed inset-0 z-55 overflow-y-auto flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setSelectedBlogPost(null)}
+          />
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative z-10 border border-stone-100 flex flex-col animate-scale-up space-y-6 max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setSelectedBlogPost(null)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-700 transition-colors duration-200 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-3">
+              {(() => {
+                let catColorClass = 'bg-stone-50 text-stone-700 border-stone-150';
+                if (selectedBlogPost.category === 'Ratgeber') catColorClass = 'bg-emerald-50 text-emerald-700 border-emerald-150';
+                else if (selectedBlogPost.category === 'Erfahrungsbericht') catColorClass = 'bg-amber-50 text-amber-700 border-amber-150';
+                else if (selectedBlogPost.category === 'Wissen') catColorClass = 'bg-blue-50 text-blue-700 border-blue-150';
+
+                return (
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded border inline-block ${catColorClass}`}>
+                    {selectedBlogPost.category}
+                  </span>
+                );
+              })()}
+              
+              <h3 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-900 leading-tight">
+                {selectedBlogPost.title}
+              </h3>
+
+              <div className="flex items-center gap-4 text-xs text-stone-500 pb-3 border-b border-stone-150">
+                <span className="font-semibold text-emerald-700">Von: {selectedBlogPost.author}</span>
+                <span>•</span>
+                <span>Veröffentlicht am: {formatDate(selectedBlogPost.date)}</span>
+              </div>
+            </div>
+
+            <div className="text-sm text-stone-700 leading-relaxed whitespace-pre-line space-y-4">
+              {selectedBlogPost.content}
+            </div>
+
+            <div className="pt-4 border-t border-stone-150 flex justify-end">
+              <button 
+                onClick={() => setSelectedBlogPost(null)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-xs cursor-pointer"
+              >
+                Schliessen
+              </button>
+            </div>
           </div>
         </div>
       )}
