@@ -1259,7 +1259,7 @@ function App() {
                 <h1 className="font-display font-extrabold text-3xl tracking-tight text-stone-900">
                   Hof<span className="text-emerald-600">Tausch</span>
                 </h1>
-                <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Tauschbörse für die Schweiz 🇨🇭</p>
+                <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">Tauschbörse für die Schweiz</p>
               </div>
             </div>
 
@@ -1534,7 +1534,7 @@ function App() {
             </div>
             <div>
               <span className="font-display font-bold text-2xl tracking-tight text-stone-900">Hof<span className="text-emerald-600">Tausch</span></span>
-              <p className="text-[10px] text-stone-500 font-semibold tracking-wider uppercase">Tauschbörse für Bauern 🇨🇭</p>
+              <p className="text-[10px] text-stone-500 font-semibold tracking-wider uppercase">Tauschbörse für Bauern</p>
             </div>
           </div>
           
@@ -1739,7 +1739,7 @@ function App() {
               <div className="absolute left-1/3 bottom-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -z-10" />
               
               <div className="space-y-5 max-w-2xl text-center lg:text-left flex-1">
-                <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3.5 py-1.5 rounded-full uppercase tracking-wider">HofTausch Schweiz 🇨🇭</span>
+                <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3.5 py-1.5 rounded-full uppercase tracking-wider">HofTausch Schweiz</span>
                 <h1 className="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-stone-900 leading-tight">
                   Tauschbörse für Bauern: <br/>
                   Gemeinsam handeln.
@@ -2240,7 +2240,7 @@ function App() {
                                   className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
                                 >
                                   <span className="font-medium text-stone-800">{suggestion.label}</span>
-                                  <span className="text-xs text-stone-400">Schweiz 🇨🇭</span>
+                                  <span className="text-xs text-stone-400">Schweiz</span>
                                 </button>
                               ))}
                             </div>
@@ -2338,7 +2338,7 @@ function App() {
                                   className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
                                 >
                                   <span className="font-medium text-stone-800">{suggestion.label}</span>
-                                  <span className="text-xs text-stone-400">Schweiz 🇨🇭</span>
+                                  <span className="text-xs text-stone-400">Schweiz</span>
                                 </button>
                               ))}
                             </div>
@@ -2981,7 +2981,7 @@ function App() {
                             className="w-full px-4 py-3 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
                           >
                             <span className="font-medium text-stone-800">{suggestion.label}</span>
-                            <span className="text-xs text-stone-400">Schweiz 🇨🇭</span>
+                            <span className="text-xs text-stone-400">Schweiz</span>
                           </button>
                         ))}
                       </div>
