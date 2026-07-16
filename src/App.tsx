@@ -234,8 +234,8 @@ function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
 
-  // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings'
-  const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings'>('landing');
+  // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings' | 'about' | 'blog' | 'contribute'
+  const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings' | 'about' | 'blog' | 'contribute'>('landing');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -3211,6 +3211,178 @@ function App() {
           </div>
         )}
 
+        {/* About Page */}
+        {activeTab === 'about' && (
+          <div className="max-w-3xl mx-auto space-y-8 animate-fade-in py-4">
+            <div className="text-center space-y-3">
+              <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">HofTausch Schweiz</span>
+              <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-stone-900 leading-tight">Über uns</h2>
+              <p className="text-stone-600 max-w-xl mx-auto text-sm sm:text-base">
+                Erfahre more über die Vision hinter HofTausch und wie wir die lokale Kooperation unter Schweizer Landwirten stärken wollen.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-stone-900">Unsere Mission</h3>
+                <p className="text-stone-600 text-sm leading-relaxed">
+                  HofTausch wurde gegründet, um die traditionelle Nachbarschaftshilfe in das digitale Zeitalter zu führen. Schweizer Landwirte stehen täglich vor grossen Herausforderungen: volatile Futterpreise, teure Spezialmaschinen, die nur selten gebraucht werden, und ein Mangel an flexibler Arbeitskraft.
+                </p>
+                <p className="text-stone-600 text-sm leading-relaxed">
+                  Wir glauben daran, dass die Lösung oft direkt nebenan liegt. Durch das unkomplizierte Anbieten und Suchen von Futtermitteln, Geräten, Tieren und Dienstleistungen können Höfe sich gegenseitig unterstützen, Ressourcen schonen und Kosten sparen.
+                </p>
+              </div>
+
+              <hr className="border-stone-150" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                <div className="space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">1</div>
+                  <h4 className="font-bold text-stone-900 text-sm">Ressourcen schonen</h4>
+                  <p className="text-xs text-stone-500 leading-relaxed">Nicht jeder Hof muss jedes Spezialgerät besitzen. Teilen spart Kosten und schont das Klima.</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">2</div>
+                  <h4 className="font-bold text-stone-900 text-sm">Regionale Stärke</h4>
+                  <p className="text-xs text-stone-500 leading-relaxed">Kurze Wege und direkte Absprachen stärken den Zusammenhalt in den ländlichen Gemeinden.</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">3</div>
+                  <h4 className="font-bold text-stone-900 text-sm">Kostenlose Plattform</h4>
+                  <p className="text-xs text-stone-500 leading-relaxed">HofTausch ist und bleibt für Landwirte kostenlos. Keine versteckten Gebühren oder Provisionen.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Blog Page */}
+        {activeTab === 'blog' && (
+          <div className="max-w-4xl mx-auto space-y-8 animate-fade-in py-4">
+            <div className="text-center space-y-3">
+              <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">HofTausch Journal</span>
+              <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-stone-900 leading-tight">Blog & Neuigkeiten</h2>
+              <p className="text-stone-600 max-w-xl mx-auto text-sm sm:text-base">
+                Aktuelle Beiträge, nützliche Ratgeber und Erfolgsgeschichten aus unserer Tauschgemeinschaft.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Blog Article 1 */}
+              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
+                <div className="p-6 space-y-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-150 inline-block">Ratgeber</span>
+                  <h3 className="font-display font-bold text-base text-stone-900 leading-tight">Tipps für einen erfolgreichen Futtertausch</h3>
+                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-3">
+                    Beim Tausch von Futter und Silage spielen Qualität und Deklaration eine grosse Rolle. Erfahre, worauf du bei der Übergabe achten musst, um deinen Tauschpartner glücklich zu machen.
+                  </p>
+                </div>
+                <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-400">
+                  <span>12. Juli 2026</span>
+                  <span className="font-semibold text-emerald-600 font-bold">Weiterlesen &rarr;</span>
+                </div>
+              </div>
+
+              {/* Blog Article 2 */}
+              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
+                <div className="p-6 space-y-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-150 inline-block">Erfahrungsbericht</span>
+                  <h3 className="font-display font-bold text-base text-stone-900 leading-tight">Nachbarschaftshilfe im Aargau</h3>
+                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-3">
+                    Bauer Ueli berichtet von seinen Erfahrungen mit HofTausch: „Ich brauchte dringend Hilfe bei der Obsternte und konnte im Gegenzug mein Rinderfutter anbieten. Innerhalb von 2 Tagen war alles geregelt.“
+                  </p>
+                </div>
+                <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-400">
+                  <span>05. Juli 2026</span>
+                  <span className="font-semibold text-emerald-600 font-bold">Weiterlesen &rarr;</span>
+                </div>
+              </div>
+
+              {/* Blog Article 3 */}
+              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
+                <div className="p-6 space-y-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-150 inline-block">Wissen</span>
+                  <h3 className="font-display font-bold text-base text-stone-900 leading-tight">Gemeinsam Maschinen nutzen</h3>
+                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-3">
+                    Spezialmaschinen kosten viel Geld in der Anschaffung und stehen oft monatelang ungenutzt im Schuppen. Maschinengemeinschaften helfen, die Auslastung zu optimieren und Betriebskosten drastisch zu senken.
+                  </p>
+                </div>
+                <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-400">
+                  <span>28. Juni 2026</span>
+                  <span className="font-semibold text-emerald-600 font-bold">Weiterlesen &rarr;</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Contribute Page */}
+        {activeTab === 'contribute' && (
+          <div className="max-w-3xl mx-auto space-y-8 animate-fade-in py-4">
+            <div className="text-center space-y-3">
+              <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">Mitmachen & Unterstützen</span>
+              <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-stone-900 leading-tight">Mitwirken</h2>
+              <p className="text-stone-600 max-w-xl mx-auto text-sm sm:text-base">
+                HofTausch ist ein Gemeinschaftsprojekt. Erfahre, wie du das Projekt unterstützen und weiterentwickeln kannst.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+                <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+                  <Handshake className="w-5 h-5 text-emerald-600" />
+                  Als Landwirt/-in
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Die beste Unterstützung für HofTausch ist eine aktive Community. Erzähle deinen Berufskollegen von der Plattform, teile deine Tauschangebote oder hänge ein HofTausch-Plakat in deinem Milchraum oder lokalen Landi auf!
+                </p>
+              </div>
+
+              <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm space-y-4">
+                <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+                  <Settings className="w-5 h-5 text-emerald-600" />
+                  Als Entwickler/-in
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Das Projekt ist quelloffen (Open Source) entwickelt. Du hast Programmiererfahrung (React, Tailwind, Firebase) und möchtest neue Features einbauen oder Fehler beheben? Melde dich über Github bei uns!
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+              <h3 className="text-lg font-bold text-stone-900 border-b border-stone-150 pb-3 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-600" />
+                Feedback & Anregungen einsenden
+              </h3>
+
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  showToast('Vielen Dank für deine Nachricht! Wir melden uns in Kürze.');
+                  (e.target as HTMLFormElement).reset();
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Deine Nachricht / Idee</label>
+                  <textarea 
+                    rows={4}
+                    placeholder="Welche Tauschkategorien fehlen dir noch? Hast du Verbesserungsvorschläge für die Benutzeroberfläche?"
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                    required
+                  />
+                </div>
+                <button 
+                  type="submit"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-sm cursor-pointer"
+                >
+                  Nachricht absenden
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
       </main>
 
       {/* Listing Detail & Swap Request Modal */}
@@ -3693,7 +3865,7 @@ function App() {
 
       {/* Footer */}
       <footer className="bg-stone-900 text-stone-400 py-12 mt-16 border-t border-stone-850">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-500">
               <Handshake className="w-5 h-5" />
@@ -3702,6 +3874,30 @@ function App() {
               <span className="font-display font-bold text-lg text-white">Hof<span className="text-emerald-500">Tausch</span></span>
               <p className="text-[9px] text-stone-500 uppercase tracking-wider">Lokale Kooperation & Tauschbörse 🇨🇭</p>
             </div>
+          </div>
+
+          {/* Footer Navigation Links */}
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-stone-400">
+            <button 
+              onClick={() => setActiveTab('about')}
+              className={`hover:text-emerald-450 transition-colors focus:outline-none cursor-pointer ${activeTab === 'about' ? 'text-emerald-400 font-bold' : ''}`}
+            >
+              Über uns
+            </button>
+            <span className="text-stone-800">|</span>
+            <button 
+              onClick={() => setActiveTab('blog')}
+              className={`hover:text-emerald-450 transition-colors focus:outline-none cursor-pointer ${activeTab === 'blog' ? 'text-emerald-400 font-bold' : ''}`}
+            >
+              Blog
+            </button>
+            <span className="text-stone-800">|</span>
+            <button 
+              onClick={() => setActiveTab('contribute')}
+              className={`hover:text-emerald-450 transition-colors focus:outline-none cursor-pointer ${activeTab === 'contribute' ? 'text-emerald-400 font-bold' : ''}`}
+            >
+              Mitwirken
+            </button>
           </div>
 
           <div className="text-center md:text-right space-y-1">
