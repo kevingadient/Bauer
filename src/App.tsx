@@ -2258,7 +2258,8 @@ function App() {
 
         {/* Create Listing Tab */}
         {activeTab === 'create' && (
-          <div className="max-w-2xl mx-auto animate-fade-in space-y-6">
+          <div className="min-h-[70vh] flex flex-col justify-center py-8">
+            <div className="max-w-2xl w-full mx-auto animate-fade-in space-y-6">
             <div className="text-center space-y-2">
               <h2 className="font-display font-extrabold text-3xl text-stone-900">
                 {editingListing ? 'Inserat bearbeiten' : 'Neues Tauschangebot einstellen'}
@@ -2596,6 +2597,7 @@ function App() {
                 </button>
               </div>
             </form>
+          </div>
           </div>
         )}
 
