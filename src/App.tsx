@@ -35,8 +35,9 @@ import {
   checkIsMagicLink, 
   completeMagicLinkSignIn, 
   signInPhone, 
-  signInGoogle, 
+  signInGoogle,
   signInFacebook, 
+  getRedirectLoginResult,
   logOut, 
   subscribeToListings, 
   subscribeToRequests, 
@@ -295,6 +296,23 @@ function App() {
       setAuthLoading(false);
     });
     return unsubscribe;
+  }, []);
+
+  // Redirect Login Result Handler on mount
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectLoginResult();
+        if (result && result.user) {
+          console.log("[HofTausch] Redirect social login successful:", result.user);
+          showToast('Erfolgreich über Social Login angemeldet!');
+        }
+      } catch (error: any) {
+        console.error("[HofTausch] Error resolving redirect login:", error);
+        showToast('Social Login fehlgeschlagen: ' + error.message, 'error');
+      }
+    };
+    handleRedirectResult();
   }, []);
 
   // Umami Analytics dynamic tracker injection

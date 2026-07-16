@@ -4,6 +4,7 @@ import {
   GoogleAuthProvider, 
   FacebookAuthProvider,
   signInWithRedirect,
+  getRedirectResult,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
@@ -198,6 +199,13 @@ export const signInGoogle = async () => {
     mockUserListeners.forEach(l => l(mockCurrentUser));
     return mockCurrentUser;
   }
+};
+
+export const getRedirectLoginResult = async () => {
+  if (!isMock && auth) {
+    return await getRedirectResult(auth);
+  }
+  return null;
 };
 
 export const signInFacebook = async () => {
