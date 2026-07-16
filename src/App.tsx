@@ -322,6 +322,35 @@ function App() {
     }
   }, []);
 
+  // Global click tracker for Umami
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const umami = (window as any).umami;
+      if (!umami) return;
+
+      const target = e.target as HTMLElement;
+      const interactiveEl = target.closest('button, a, [role="button"]');
+      if (interactiveEl) {
+        const text = interactiveEl.textContent?.trim().substring(0, 50) || '';
+        const id = interactiveEl.id || '';
+        const role = interactiveEl.getAttribute('role') || '';
+        const label = interactiveEl.getAttribute('aria-label') || '';
+        
+        umami.track('Click', {
+          element: interactiveEl.tagName.toLowerCase(),
+          id: id || undefined,
+          text: text || undefined,
+          label: label || undefined,
+          role: role || undefined,
+          path: window.location.pathname + window.location.search
+        });
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, []);
+
 
   // Magic Link handler on mount
   useEffect(() => {
