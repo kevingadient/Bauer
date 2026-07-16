@@ -1274,10 +1274,10 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('create')}
-              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center gap-2 cursor-pointer shadow-sm ${
                 activeTab === 'create' 
-                  ? 'bg-emerald-600 text-white shadow-sm' 
-                  : 'text-stone-600 hover:bg-stone-100'
+                  ? 'bg-emerald-700 text-white shadow-inner ring-2 ring-emerald-700/10' 
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md shadow-emerald-650/20'
               }`}
             >
               <PlusCircle className="w-4 h-4" /> Inserat erstellen
@@ -1373,10 +1373,10 @@ function App() {
           </button>
           <button 
             onClick={() => { setActiveTab('create'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
+            className={`w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 cursor-pointer ${
               activeTab === 'create' 
-                ? 'bg-emerald-600 text-white shadow-sm' 
-                : 'text-stone-600 hover:bg-stone-50'
+                ? 'bg-emerald-700 text-white shadow-inner' 
+                : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-600 hover:text-white'
             }`}
           >
             <PlusCircle className="w-4 h-4" /> Inserat erstellen
