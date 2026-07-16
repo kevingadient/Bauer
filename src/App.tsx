@@ -1541,40 +1541,40 @@ function App() {
           <nav className="hidden md:flex items-center gap-2">
             <button 
               onClick={() => setActiveTab('landing')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 border ${
                 activeTab === 'landing' 
-                  ? 'bg-emerald-600 text-white shadow-sm' 
-                  : 'text-stone-600 hover:bg-stone-100'
+                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                  : 'border-stone-200 text-stone-600 hover:bg-stone-100'
               }`}
             >
               Startseite
             </button>
             <button 
               onClick={() => setActiveTab('market')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 border ${
                 activeTab === 'market' 
-                  ? 'bg-emerald-600 text-white shadow-sm' 
-                  : 'text-stone-600 hover:bg-stone-100'
+                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                  : 'border-stone-200 text-stone-600 hover:bg-stone-100'
               }`}
             >
               Marktplatz
             </button>
             <button 
               onClick={() => setActiveTab('create')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-bold text-sm transition-all duration-200 gap-2 cursor-pointer shadow-sm ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-bold text-sm transition-all duration-200 gap-2 cursor-pointer shadow-sm border ${
                 activeTab === 'create' 
-                  ? 'bg-emerald-700 text-white shadow-inner ring-2 ring-emerald-700/10' 
-                  : 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md shadow-emerald-650/20'
+                  ? 'bg-emerald-700 border-emerald-700 text-white shadow-inner ring-2 ring-emerald-700/10' 
+                  : 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700 hover:shadow-md shadow-emerald-650/20'
               }`}
             >
               <PlusCircle className="w-4 h-4" /> Inserat erstellen
             </button>
             <button 
               onClick={() => setActiveTab('my-listings')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 relative ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 relative border ${
                 activeTab === 'my-listings' 
-                  ? 'bg-emerald-600 text-white shadow-sm' 
-                  : 'text-stone-600 hover:bg-stone-100'
+                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                  : 'border-stone-200 text-stone-600 hover:bg-stone-100'
               }`}
             >
               Meine Inserate
@@ -1586,10 +1586,10 @@ function App() {
             </button>
             <button 
               onClick={() => setActiveTab('my-requests')}
-              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 ${
+              className={`w-44 h-11 flex items-center justify-center rounded-xl font-medium text-sm transition-all duration-200 border ${
                 activeTab === 'my-requests' 
-                  ? 'bg-emerald-600 text-white shadow-sm' 
-                  : 'text-stone-600 hover:bg-stone-100'
+                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                  : 'border-stone-200 text-stone-600 hover:bg-stone-100'
               }`}
             >
               Gesendete Anfragen
@@ -1640,43 +1640,43 @@ function App() {
         <div className="md:hidden bg-white border-b border-stone-200/80 px-4 py-3 space-y-2 shadow-sm animate-fade-in">
           <button 
             onClick={() => { setActiveTab('landing'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 border ${
               activeTab === 'landing' 
-                ? 'bg-emerald-600 text-white shadow-sm' 
-                : 'text-stone-600 hover:bg-stone-50'
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
             Startseite
           </button>
           <button 
             onClick={() => { setActiveTab('market'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 border ${
               activeTab === 'market' 
-                ? 'bg-emerald-600 text-white shadow-sm' 
-                : 'text-stone-600 hover:bg-stone-50'
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
             Marktplatz
           </button>
           <button 
             onClick={() => { setActiveTab('create'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+            className={`w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 cursor-pointer border ${
               activeTab === 'create' 
-                ? 'bg-emerald-700 text-white shadow-inner' 
-                : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80 hover:bg-emerald-600 hover:text-white'
+                ? 'bg-emerald-700 border-emerald-700 text-white shadow-inner' 
+                : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-650 hover:text-white hover:border-emerald-650'
             }`}
           >
             <PlusCircle className="w-4 h-4" /> Inserat erstellen
           </button>
           <button 
             onClick={() => { setActiveTab('my-listings'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-between ${
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-between border ${
               activeTab === 'my-listings' 
-                ? 'bg-emerald-600 text-white shadow-sm' 
-                : 'text-stone-600 hover:bg-stone-50'
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
-            <span className="flex items-center gap-2">Meine Inserate & Anfragen</span>
+            <span className="flex items-center gap-2">Meine Inserate</span>
             {requests.filter(r => listings.filter(l => l.userId === currentUser.uid).map(l => l.id).includes(r.listingId) && r.status === 'offen').length > 0 && (
               <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {requests.filter(r => listings.filter(l => l.userId === currentUser.uid).map(l => l.id).includes(r.listingId) && r.status === 'offen').length}
@@ -1685,10 +1685,10 @@ function App() {
           </button>
           <button 
             onClick={() => { setActiveTab('my-requests'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 border ${
               activeTab === 'my-requests' 
-                ? 'bg-emerald-600 text-white shadow-sm' 
-                : 'text-stone-600 hover:bg-stone-50'
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
             Gesendete Anfragen
