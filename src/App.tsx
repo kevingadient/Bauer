@@ -144,6 +144,23 @@ const getRemainingDays = (expiryDateStr?: string) => {
   return diffDays;
 };
 
+const getDistanceKm = (coords1: [number, number], coords2: [number, number]): number => {
+  const [lat1, lon1] = coords1;
+  const [lat2, lon2] = coords2;
+  
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 function App() {
   const [isMock] = useState(checkIsMock);
   
@@ -164,6 +181,11 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Listing['category'] | 'Alle'>('Alle');
   const [searchLocation, setSearchLocation] = useState('');
+  const [selectedSearchCoords, setSelectedSearchCoords] = useState<[number, number] | null>(null);
+  const [searchRadius, setSearchRadius] = useState<number | null>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<{ label: string; coords: [number, number] }[]>([]);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [lastSelectedSearchLocation, setLastSelectedSearchLocation] = useState('');
   const [marketViewMode, setMarketViewMode] = useState<'list' | 'map'>('map');
 
   // Filter listings
@@ -181,7 +203,27 @@ function App() {
       listing.farmerName.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesCategory = selectedCategory === 'Alle' || listing.category === selectedCategory;
-    const matchesLocation = listing.location.toLowerCase().includes(searchLocation.toLowerCase());
+    
+    let matchesLocation = true;
+    if (searchLocation.trim()) {
+      if (searchRadius !== null) {
+        const refCoords = selectedSearchCoords || getCoordinatesForLocation(searchLocation);
+        const listingCoords = listing.coordinates || getCoordinatesForLocation(listing.location);
+        
+        if (refCoords && listingCoords) {
+          const dist = getDistanceKm(refCoords, listingCoords);
+          if (searchRadius === 0) {
+            matchesLocation = dist < 0.5 || listing.location.toLowerCase().includes(searchLocation.toLowerCase());
+          } else {
+            matchesLocation = dist <= searchRadius;
+          }
+        } else {
+          matchesLocation = listing.location.toLowerCase().includes(searchLocation.toLowerCase());
+        }
+      } else {
+        matchesLocation = listing.location.toLowerCase().includes(searchLocation.toLowerCase());
+      }
+    }
     
     return matchesSearch && matchesCategory && matchesLocation;
   });
@@ -467,6 +509,60 @@ function App() {
       unsubRequests();
     };
   }, [currentUser]);
+
+  // Autocomplete swisstopo API query for marketplace search location input with 300ms debounce
+  useEffect(() => {
+    const cleanVal = searchLocation.trim();
+    if (cleanVal.length < 3) {
+      setSearchSuggestions([]);
+      setShowSearchSuggestions(false);
+      return;
+    }
+
+    if (lastSelectedSearchLocation === cleanVal) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://api3.geo.admin.ch/rest/services/ech/SearchServer?type=locations&origins=address&searchText=${encodeURIComponent(cleanVal)}&sr=4326&limit=5`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.results) {
+            const suggestions = data.results.map((item: any) => {
+              const cleanLabel = item.attrs.label.replace(/<\/?[^>]+(>|$)/g, "").replace(/\s+/g, " ");
+              return {
+                label: cleanLabel,
+                coords: [parseFloat(item.attrs.lat), parseFloat(item.attrs.lon)] as [number, number]
+              };
+            });
+            setSearchSuggestions(suggestions);
+            setShowSearchSuggestions(suggestions.length > 0);
+          }
+        }
+      } catch (err) {
+        console.warn("[HofTausch] Error fetching swisstopo search location suggestions:", err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchLocation, lastSelectedSearchLocation]);
+
+  const handleSelectSearchLocation = (suggestion: { label: string; coords: [number, number] }) => {
+    setSearchLocation(suggestion.label);
+    setLastSelectedSearchLocation(suggestion.label);
+    setSelectedSearchCoords(suggestion.coords);
+    setSearchSuggestions([]);
+    setShowSearchSuggestions(false);
+  };
+
+  const handleSearchLocationChange = (val: string) => {
+    setSearchLocation(val);
+    if (!val.trim()) {
+      setSelectedSearchCoords(null);
+    }
+  };
 
   // Leaflet Map logic
   useEffect(() => {
@@ -1996,23 +2092,78 @@ function App() {
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Standort</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3 w-4 h-4 text-stone-400" />
-                        <input 
-                          type="text" 
-                          placeholder="Ort oder PLZ..."
-                          value={searchLocation}
-                          onChange={(e) => setSearchLocation(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-xs"
-                        />
+                    <div className="space-y-3">
+                      {/* Location Input with Autocomplete */}
+                      <div className="space-y-1 relative">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Standort</label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 w-4 h-4 text-stone-400" />
+                          <input 
+                            type="text" 
+                            placeholder="Ort oder PLZ..."
+                            value={searchLocation}
+                            onChange={(e) => handleSearchLocationChange(e.target.value)}
+                            onFocus={() => {
+                              if (searchLocation.trim().length > 0 && searchSuggestions.length > 0) {
+                                setShowSearchSuggestions(true);
+                              }
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setShowSearchSuggestions(false), 200);
+                            }}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-xs"
+                            autoComplete="off"
+                          />
+                          
+                          {showSearchSuggestions && searchSuggestions.length > 0 && (
+                            <div className="absolute left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto divide-y divide-stone-100">
+                              {searchSuggestions.map((suggestion, idx) => (
+                                <button
+                                  key={`search-${suggestion.label}-${idx}`}
+                                  type="button"
+                                  onClick={() => handleSelectSearchLocation(suggestion)}
+                                  className="w-full px-3 py-2 text-left text-xs hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
+                                >
+                                  <span className="font-medium text-stone-850 truncate">{suggestion.label}</span>
+                                  <span className="text-[10px] text-stone-400 shrink-0">Schweiz</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Radius Selector */}
+                      {searchLocation.trim().length > 0 && (
+                        <div className="space-y-1 animate-fade-in">
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-stone-400">Umkreis (Radius)</label>
+                          <select
+                            value={searchRadius === null ? 'all' : searchRadius.toString()}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSearchRadius(val === 'all' ? null : parseInt(val));
+                            }}
+                            className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-xs appearance-none cursor-pointer"
+                          >
+                            <option value="all">Kein Filter (Unbegrenzt)</option>
+                            <option value="0">0 km (Nur exakter Ort)</option>
+                            <option value="5">5 km</option>
+                            <option value="10">10 km</option>
+                            <option value="20">20 km</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <button 
-                    onClick={() => { setSearchQuery(''); setSelectedCategory('Alle'); setSearchLocation(''); }}
+                    onClick={() => { 
+                      setSearchQuery(''); 
+                      setSelectedCategory('Alle'); 
+                      setSearchLocation(''); 
+                      setSelectedSearchCoords(null); 
+                      setSearchRadius(null); 
+                    }}
                     className="w-full mt-2 text-center text-xs text-stone-500 hover:text-stone-900 border border-stone-200 hover:bg-stone-50 py-2 rounded-xl transition-all duration-150 font-medium"
                   >
                     Filter zurücksetzen
