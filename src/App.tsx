@@ -196,6 +196,29 @@ const fetchCoordsForZip = async (zip: string) => {
   return null;
 };
 
+const formatDate = (dateStr: string): string => {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toISOString().split('T')[0];
+  } catch {
+    return dateStr;
+  }
+};
+
+const isNewListing = (dateStr: string): boolean => {
+  try {
+    const created = new Date(dateStr);
+    if (isNaN(created.getTime())) return false;
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return diffHours >= 0 && diffHours <= 24;
+  } catch {
+    return false;
+  }
+};
+
 function App() {
   const [isMock] = useState(checkIsMock);
   
@@ -1091,7 +1114,7 @@ function App() {
       setEditingListing(null);
     } else {
       const dateToday = new Date();
-      const dateString = dateToday.toISOString().split('T')[0];
+      const dateString = dateToday.toISOString();
       const expiryDate = new Date(dateToday.getTime() + 21 * 24 * 60 * 60 * 1000);
       const expiryDateString = expiryDate.toISOString().split('T')[0];
 
@@ -1978,11 +2001,18 @@ function App() {
                           key={listing.id}
                           className="group flex flex-col justify-between bg-white rounded-2xl border border-stone-200 hover:border-emerald-500/50 hover:shadow-lg transition-all duration-300 overflow-hidden relative"
                         >
-                          {isOwn && (
-                            <span className="absolute top-3 right-3 z-10 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                              Mein Inserat
-                            </span>
-                          )}
+                          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+                            {isNewListing(listing.date) && (
+                              <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                                NEU
+                              </span>
+                            )}
+                            {isOwn && (
+                              <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                Mein Inserat
+                              </span>
+                            )}
+                          </div>
                           <div className="p-6 space-y-4">
                             <div className="flex items-center justify-between">
                               <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
@@ -1992,7 +2022,7 @@ function App() {
                               <div className="flex flex-col items-end text-[10px] text-stone-400">
                                 <span className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  {listing.date}
+                                  {formatDate(listing.date)}
                                 </span>
                                 {listing.expiryDate && (
                                   <span className={`font-semibold mt-0.5 flex items-center gap-0.5 ${
@@ -2528,12 +2558,17 @@ function App() {
                       <div className="p-6 border-b border-stone-150 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-stone-50/50">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 flex-wrap">
+                            {isNewListing(listing.date) && (
+                              <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                                NEU
+                              </span>
+                            )}
                             <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-lg border flex items-center gap-1.5 ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}>
                               <img src={catStyle.icon} alt="" className="w-4 h-4" />
                               {listing.category}
                             </span>
                             <span className="text-xs text-stone-400 flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5" /> Eingerichtet am {listing.date}
+                              <Calendar className="w-3.5 h-3.5" /> Eingerichtet am {formatDate(listing.date)}
                             </span>
                             {listing.expiryDate && (
                               <span className={`text-xs font-semibold flex items-center gap-1 ${
@@ -2752,6 +2787,11 @@ function App() {
               <div className="p-6 sm:p-8 space-y-6">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
+                    {isNewListing(selectedListing.date) && (
+                      <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm animate-pulse">
+                        NEU
+                      </span>
+                    )}
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 ${
                       CATEGORY_STYLES[selectedListing.category]?.bg || 'bg-stone-50'
                     } ${CATEGORY_STYLES[selectedListing.category]?.text || 'text-stone-700'} ${
@@ -2762,7 +2802,7 @@ function App() {
                     </span>
                     <span className="text-xs text-stone-400 flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5" />
-                      Inseriert am {selectedListing.date}
+                      Inseriert am {formatDate(selectedListing.date)}
                     </span>
                   </div>
                   <h3 className="font-display font-extrabold text-2xl sm:text-3xl text-stone-900 leading-tight">
