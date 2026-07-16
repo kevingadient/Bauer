@@ -1617,7 +1617,7 @@ function App() {
             
             <button
               onClick={handleLogout}
-              className="p-2.5 rounded-xl border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-stone-50 transition-all duration-200"
+              className="hidden sm:inline-flex p-2.5 rounded-xl border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-stone-50 transition-all duration-200"
               title="Abmelden"
             >
               <LogOut className="w-4 h-4" />
@@ -1695,18 +1695,34 @@ function App() {
           </button>
 
           {/* User profile inside Mobile Menu on extra small screens */}
-          <div className="sm:hidden pt-3 border-t border-stone-100 flex items-center gap-2 px-2">
-            {currentUser.photoURL ? (
-              <img src={currentUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-stone-200" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs uppercase">
-                {(currentUser.displayName || currentUser.email || 'B').charAt(0)}
+          <div className="sm:hidden pt-3 border-t border-stone-150 flex items-center justify-between px-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {currentUser.photoURL ? (
+                <img src={currentUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-stone-200" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs uppercase shrink-0">
+                  {(currentUser.displayName || currentUser.email || 'B').charAt(0)}
+                </div>
+              )}
+              <div className="text-left text-xs truncate">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-stone-800 truncate">{currentUser.displayName || 'Bauer'}</p>
+                  {isAdmin && <span className="bg-rose-100 text-rose-800 text-[8px] font-bold px-1.5 py-0.5 rounded-full border border-rose-200 uppercase tracking-wide shrink-0">Admin</span>}
+                </div>
+                <p className="text-stone-400 truncate text-[10px]">{currentUser.email || currentUser.phoneNumber}</p>
               </div>
-            )}
-            <div className="text-left text-xs truncate">
-              <p className="font-bold text-stone-800 truncate">{currentUser.displayName || 'Bauer'}</p>
-              <p className="text-stone-400 truncate text-[10px]">{currentUser.email || currentUser.phoneNumber}</p>
             </div>
+            
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="p-2 rounded-xl border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-stone-50 transition-all duration-200 shrink-0"
+              title="Abmelden"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
