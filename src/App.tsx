@@ -1769,16 +1769,6 @@ function App() {
             >
               Gesendete Anfragen
             </button>
-            <button 
-              onClick={() => setActiveTab('settings')}
-              className={`w-40 lg:w-44 h-11 flex items-center justify-center rounded-xl font-medium text-xs lg:text-sm transition-all duration-200 border ${
-                activeTab === 'settings' 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' 
-                  : 'border-stone-200 text-stone-600 hover:bg-stone-100'
-              }`}
-            >
-              Einstellungen
-            </button>
           </nav>
 
           {/* User profile & Logout */}
@@ -1872,20 +1862,15 @@ function App() {
           >
             Gesendete Anfragen
           </button>
-          <button 
-            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
-            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 border ${
-              activeTab === 'settings' 
-                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
-                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-            }`}
-          >
-            Einstellungen
-          </button>
-
           {/* User profile inside Mobile Menu on extra small screens */}
           <div className="sm:hidden pt-3 border-t border-stone-150 flex items-center justify-between px-2">
-            <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              onClick={() => {
+                setActiveTab('settings');
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-2.5 min-w-0 text-left hover:opacity-85 transition-opacity cursor-pointer focus:outline-none"
+            >
               {currentUser.photoURL ? (
                 <img src={currentUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-stone-200" />
               ) : (
@@ -1900,7 +1885,7 @@ function App() {
                 </div>
                 <p className="text-stone-400 truncate text-[10px]">{currentUser.email || currentUser.phoneNumber}</p>
               </div>
-            </div>
+            </button>
             
             <button
               onClick={() => {
@@ -3128,6 +3113,59 @@ function App() {
                                 }}
                                 className="p-1.5 rounded-lg border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-200 cursor-pointer"
                                 title="Anfrage zurückziehen"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Saved Contacts / Alternate Addresses Table */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-stone-700 uppercase tracking-wider">Gespeicherte Ansprechpartner & Adressen ({savedContacts.length})</h4>
+                {savedContacts.length === 0 ? (
+                  <p className="text-xs text-stone-500 italic bg-stone-50 p-4 rounded-xl border border-stone-150">Du hast noch keine zusätzlichen Kontakte gespeichert.</p>
+                ) : (
+                  <div className="overflow-x-auto border border-stone-200 rounded-xl">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-200 font-bold text-stone-700">
+                          <th className="p-3.5">Name</th>
+                          <th className="p-3.5">E-Mail</th>
+                          <th className="p-3.5">Telefon</th>
+                          <th className="p-3.5">Standort (PLZ & Ort)</th>
+                          <th className="p-3.5 text-right">Aktionen</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-150">
+                        {savedContacts.map(contact => (
+                          <tr key={contact.id} className="hover:bg-stone-50/40 transition-colors">
+                            <td className="p-3.5 font-semibold text-stone-850">{contact.firstName} {contact.lastName}</td>
+                            <td className="p-3.5 text-stone-600">{contact.email}</td>
+                            <td className="p-3.5 text-stone-600">{contact.phone}</td>
+                            <td className="p-3.5 text-stone-505">{contact.address}</td>
+                            <td className="p-3.5 text-right">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm(`Möchtest du den Kontakt "${contact.firstName} ${contact.lastName}" wirklich löschen?`)) {
+                                    try {
+                                      const updated = savedContacts.filter(c => c.id !== contact.id);
+                                      setSavedContacts(updated);
+                                      await saveUserProfile(currentUser.uid, { savedContacts: updated });
+                                      showToast('Kontakt erfolgreich gelöscht.');
+                                    } catch (err: any) {
+                                      showToast('Fehler beim Löschen: ' + err.message, 'error');
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-200 cursor-pointer"
+                                title="Kontakt löschen"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
