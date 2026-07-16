@@ -155,8 +155,8 @@ function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
 
-  // Navigation: 'market' | 'create' | 'my-listings' | 'my-requests'
-  const [activeTab, setActiveTab] = useState<'market' | 'create' | 'my-listings' | 'my-requests'>('market');
+  // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests'
+  const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests'>('landing');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -1253,6 +1253,16 @@ function App() {
           
           <nav className="hidden md:flex items-center gap-2">
             <button 
+              onClick={() => setActiveTab('landing')}
+              className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                activeTab === 'landing' 
+                  ? 'bg-emerald-600 text-white shadow-sm' 
+                  : 'text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              Startseite
+            </button>
+            <button 
               onClick={() => setActiveTab('market')}
               className={`px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                 activeTab === 'market' 
@@ -1342,6 +1352,16 @@ function App() {
       {isMobileMenuOpen && (
         <div className="md:hidden bg-white border-b border-stone-200/80 px-4 py-3 space-y-2 shadow-sm animate-fade-in">
           <button 
+            onClick={() => { setActiveTab('landing'); setIsMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+              activeTab === 'landing' 
+                ? 'bg-emerald-600 text-white shadow-sm' 
+                : 'text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            Startseite
+          </button>
+          <button 
             onClick={() => { setActiveTab('market'); setIsMobileMenuOpen(false); }}
             className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
               activeTab === 'market' 
@@ -1407,10 +1427,10 @@ function App() {
       {/* Main Content Area */}
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         
-        {/* Marketplace View */}
-        {activeTab === 'market' && (
-          <div className="space-y-8 animate-fade-in">
-            {/* Hero Banner */}
+        {/* Landing Page View */}
+        {activeTab === 'landing' && (
+          <div className="space-y-12 animate-fade-in">
+            {/* Hero Banner Section */}
             <div className="glass-card rounded-3xl p-6 sm:p-10 border border-stone-200/50 flex flex-col lg:flex-row items-center justify-between gap-8 relative overflow-hidden">
               <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
               <div className="absolute left-1/3 bottom-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -z-10" />
@@ -1424,12 +1444,18 @@ function App() {
                 <p className="text-stone-600 text-base sm:text-lg leading-relaxed">
                   Biete Maschinen zur Leihe, tausche Heu gegen Futter, oder helfe einem Nachbarn beim Zaunbau. Direkt, unkompliziert und regional in der Schweiz.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center lg:justify-start">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
+                  <button 
+                    onClick={() => setActiveTab('market')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 py-4 rounded-xl shadow-lg shadow-emerald-650/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    Marktplatz öffnen <ArrowRightLeft className="w-4 h-4" />
+                  </button>
                   <button 
                     onClick={() => setActiveTab('create')}
-                    className="bg-emerald-600 text-white font-medium px-6 py-3.5 rounded-xl hover:bg-emerald-700 hover:shadow-lg transition-all duration-200 text-center flex items-center justify-center gap-2 shadow-sm shadow-emerald-600/10"
+                    className="bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 font-bold px-8 py-4 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-sm flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <PlusCircle className="w-5 h-5" /> Eigenes Angebot eintragen
+                    <PlusCircle className="w-4 h-4 text-emerald-600" /> Inserat erstellen
                   </button>
                 </div>
               </div>
@@ -1446,6 +1472,65 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* Platform Info Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+              <div className="bg-white border border-stone-200/60 rounded-3xl p-8 space-y-4 hover:shadow-md transition-shadow duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-stone-900">Regional & Direkt</h3>
+                <p className="text-stone-600 text-sm leading-relaxed">
+                  Finde Tauschangebote direkt in Deiner Umgebung in der Schweiz. Suche gezielt nach PLZ oder Ort und unterstütze Betriebe in Deiner Region.
+                </p>
+              </div>
+
+              <div className="bg-white border border-stone-200/60 rounded-3xl p-8 space-y-4 hover:shadow-md transition-shadow duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                  <Tag className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-stone-900">Vielfältige Kategorien</h3>
+                <p className="text-stone-600 text-sm leading-relaxed">
+                  Egal ob Futtermittel, Saatgut, Maschinenvermietung, Arbeitskraft oder Dünger – teile Deine Ressourcen flexibel mit Kollegen.
+                </p>
+              </div>
+
+              <div className="bg-white border border-stone-200/60 rounded-3xl p-8 space-y-4 hover:shadow-md transition-shadow duration-300">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                  <Check className="w-6 h-6" />
+                </div>
+                <h3 className="font-display font-bold text-lg text-stone-900">Unkomplizierter Tausch</h3>
+                <p className="text-stone-600 text-sm leading-relaxed">
+                  Keine Provisionen, keine Gebühren. Kontaktiere andere Landwirte direkt per E-Mail oder Telefon und einigt Euch unkompliziert untereinander.
+                </p>
+              </div>
+            </div>
+
+            {/* Terms of Service Section */}
+            <div className="bg-amber-50/50 border border-amber-200/60 rounded-3xl p-6 sm:p-8 space-y-4">
+              <h2 className="font-display font-bold text-xl text-amber-900 flex items-center gap-2">
+                <Info className="w-5 h-5 text-amber-700" />
+                Wichtiger Hinweis zu unseren Nutzungsbedingungen
+              </h2>
+              <div className="text-amber-800 text-sm leading-relaxed space-y-3">
+                <p>
+                  HofTausch ist eine reine Vermittlungsplattform, die den Konkakt und Austausch unter Schweizer Landwirten erleichtern soll. 
+                  Jegliche Nutzung der Plattform – insbesondere Absprachen, Vereinbarungen, Lieferungen und die Durchführung der Tauschgeschäfte – 
+                  <strong> erfolgt vollkommen eigenverantwortlich und ausschliesslich direkt zwischen dem Inserenten und dem Tauschanbieter.</strong>
+                </p>
+                <p>
+                  Es ist kein Dritter (weder HofTausch noch sonstige Vermittler) in den eigentlichen Tauschprozess involviert. 
+                  Wir übernehmen keinerlei Haftung, Gewährleistung oder Verantwortung für die Qualität der angebotenen Tauschgüter, 
+                  die Zuverlässigkeit der Partner oder eventuelle Schäden und Unstimmigkeiten, die aus einem Tauschgeschäft entstehen.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Marketplace View */}
+        {activeTab === 'market' && (
+          <div className="space-y-8 animate-fade-in">
 
             {/* Split layout: Content on Left, Sticky Filters on Right */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
