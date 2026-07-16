@@ -117,6 +117,20 @@ const SWISS_LOCATIONS: SwissLocationInfo[] = [
 
 const SWISS_CENTER: [number, number] = [46.8182, 8.2275];
 
+const safeCoords = (coords: any): [number, number] => {
+  if (!coords) return SWISS_CENTER;
+  if (Array.isArray(coords) && coords.length === 2) {
+    const lat = parseFloat(coords[0] as any);
+    const lon = parseFloat(coords[1] as any);
+    if (!isNaN(lat) && !isNaN(lon)) return [lat, lon];
+  } else if (typeof coords === 'object') {
+    const lat = parseFloat((coords.latitude ?? coords.lat ?? coords[0]) as any);
+    const lon = parseFloat((coords.longitude ?? coords.lon ?? coords.lng ?? coords[1]) as any);
+    if (!isNaN(lat) && !isNaN(lon)) return [lat, lon];
+  }
+  return SWISS_CENTER;
+};
+
 const getCoordinatesForLocation = (locText: string): [number, number] => {
   const normalized = locText.toLowerCase().trim();
   const match = SWISS_LOCATIONS.find(loc => 
@@ -152,9 +166,9 @@ const getRemainingDays = (expiryDateStr?: string) => {
   return diffDays;
 };
 
-const getDistanceKm = (coords1: [number, number], coords2: [number, number]): number => {
-  const [lat1, lon1] = coords1;
-  const [lat2, lon2] = coords2;
+const getDistanceKm = (coords1: any, coords2: any): number => {
+  const [lat1, lon1] = safeCoords(coords1);
+  const [lat2, lon2] = safeCoords(coords2);
   
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -284,8 +298,8 @@ function App() {
     let matchesLocation = true;
     if (searchLocation.trim()) {
       if (searchRadius !== null) {
-        const refCoords = selectedSearchCoords || getCoordinatesForLocation(searchLocation);
-        const listingCoords = listing.coordinates || getCoordinatesForLocation(listing.location);
+        const refCoords = selectedSearchCoords ? safeCoords(selectedSearchCoords) : getCoordinatesForLocation(searchLocation);
+        const listingCoords = listing.coordinates ? safeCoords(listing.coordinates) : getCoordinatesForLocation(listing.location);
         
         if (refCoords && listingCoords) {
           const dist = getDistanceKm(refCoords, listingCoords);
@@ -690,7 +704,7 @@ function App() {
       const groups: Record<string, { coords: [number, number]; listings: Listing[] }> = {};
       
       filteredListings.forEach((listing) => {
-        const coords = listing.coordinates || SWISS_CENTER;
+        const coords = safeCoords(listing.coordinates);
         const coordKey = `${coords[0].toFixed(5)},${coords[1].toFixed(5)}`;
         if (!groups[coordKey]) {
           groups[coordKey] = { coords, listings: [] };
