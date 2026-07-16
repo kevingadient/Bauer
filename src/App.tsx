@@ -1751,9 +1751,13 @@ function App() {
               <div className="flex-1 w-full max-w-md lg:max-w-none flex justify-center lg:justify-end">
                 <div className="relative group w-full aspect-[4/3] sm:aspect-[16/10] lg:aspect-[4/3] rounded-2xl overflow-hidden border border-stone-200/60 shadow-xl bg-stone-100 transition-transform duration-500 hover:scale-[1.02]">
                   <img 
-                    src={`${import.meta.env.BASE_URL}img/header.png`} 
+                    src={`${import.meta.env.BASE_URL}img/header.webp`} 
                     alt="HofTausch Hero" 
                     className="w-full h-full object-cover"
+                    loading="eager"
+                    decoding="async"
+                    width="1200"
+                    height="654"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-stone-900/40 via-transparent to-transparent pointer-events-none" />
                 </div>
