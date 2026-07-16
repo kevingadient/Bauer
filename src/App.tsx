@@ -23,7 +23,9 @@ import {
   Map as MapIcon,
   List,
   Pencil,
-  Menu
+  Menu,
+  Settings,
+  AlertTriangle
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -47,6 +49,7 @@ import {
   updateRequestStatus,
   getUserProfile,
   saveUserProfile,
+  deleteUserAccountAndData,
   RecaptchaVerifier,
   auth
 } from './firebase';
@@ -230,8 +233,8 @@ function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
 
-  // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests'
-  const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests'>('landing');
+  // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings'
+  const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings'>('landing');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -298,6 +301,10 @@ function App() {
   // Contact Confirmation Modal & Profile States
   const [showConfirmContactModal, setShowConfirmContactModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<'create_listing' | 'send_request' | null>(null);
+  
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   const [profileFirstName, setProfileFirstName] = useState('');
   const [profileLastName, setProfileLastName] = useState('');
@@ -1142,6 +1149,64 @@ function App() {
     setActiveTab('my-listings');
   };
 
+  const handleSaveProfileFromSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+
+    const isFirstNameValid = validateProfileFirstName(profileFirstName);
+    const isLastNameValid = validateProfileLastName(profileLastName);
+    const isEmailValid = validateProfileEmail(profileEmail);
+    const isPhoneValid = validateProfilePhone(profilePhone);
+
+    if (!isFirstNameValid || !isLastNameValid || !isEmailValid || !isPhoneValid) {
+      showToast('Bitte korrigiere die Fehler in deinen Kontaktdaten.', 'error');
+      return;
+    }
+
+    setProfileLoading(true);
+    try {
+      const zipCity = extractZipAndCity(profileAddress);
+      const profileData = {
+        firstName: profileFirstName.trim(),
+        lastName: profileLastName.trim(),
+        email: profileEmail.trim(),
+        phone: profilePhone.trim(),
+        address: zipCity,
+        confirmedAt: new Date().toISOString()
+      };
+      await saveUserProfile(currentUser.uid, profileData);
+      showToast('Profil erfolgreich gespeichert!');
+    } catch (error: any) {
+      console.error("[HofTausch] Error saving profile:", error);
+      showToast('Fehler beim Speichern: ' + error.message, 'error');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+    if (deleteConfirmText !== 'LÖSCHEN') {
+      showToast('Bitte bestätige die Löschung durch Eingabe von LÖSCHEN.', 'error');
+      return;
+    }
+
+    setDeleteLoading(true);
+    try {
+      await deleteUserAccountAndData(currentUser.uid);
+      showToast('Konto und alle Daten wurden erfolgreich gelöscht.');
+      
+      setShowDeleteConfirmModal(false);
+      setDeleteConfirmText('');
+      setActiveTab('landing');
+    } catch (error: any) {
+      console.error("[HofTausch] Error deleting account:", error);
+      showToast('Fehler beim Löschen des Kontos: ' + error.message, 'error');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   // Submission handler after user confirms their contact details in the modal
   const handleConfirmProfileAndSubmit = async () => {
     if (!currentUser) return;
@@ -1703,6 +1768,16 @@ function App() {
             >
               Gesendete Anfragen
             </button>
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`w-40 lg:w-44 h-11 flex items-center justify-center rounded-xl font-medium text-xs lg:text-sm transition-all duration-200 border ${
+                activeTab === 'settings' 
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-sm' 
+                  : 'border-stone-200 text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              Einstellungen
+            </button>
           </nav>
 
           {/* User profile & Logout */}
@@ -1792,6 +1867,16 @@ function App() {
             }`}
           >
             Gesendete Anfragen
+          </button>
+          <button 
+            onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
+            className={`w-full text-left px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 border ${
+              activeTab === 'settings' 
+                ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+            }`}
+          >
+            Einstellungen
           </button>
 
           {/* User profile inside Mobile Menu on extra small screens */}
@@ -2769,6 +2854,160 @@ function App() {
           </div>
         )}
 
+        {/* Settings Tab */}
+        {activeTab === 'settings' && currentUser && (
+          <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+            <div className="space-y-2 text-center lg:text-left">
+              <h2 className="font-display font-extrabold text-3xl text-stone-900 flex items-center justify-center lg:justify-start gap-2.5"><Settings className="w-8 h-8 text-emerald-600 shrink-0" /> Benutzereinstellungen</h2>
+              <p className="text-stone-600">Verwalte deine Kontaktdaten und dein Benutzerkonto auf HofTausch.</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Profile Editor */}
+              <div className="lg:col-span-2 space-y-6">
+                <form onSubmit={handleSaveProfileFromSettings} className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-6">
+                  <h3 className="text-lg font-bold text-stone-900 border-b border-stone-150 pb-3 flex items-center gap-2">
+                    <User className="w-5 h-5 text-emerald-600" />
+                    Profil bearbeiten
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Vorname</label>
+                      <input 
+                        type="text" 
+                        value={profileFirstName}
+                        onChange={(e) => { setProfileFirstName(e.target.value); validateProfileFirstName(e.target.value); }}
+                        className={`w-full px-4 py-2.5 rounded-xl border bg-stone-50 focus:bg-white focus:ring-2 focus:outline-none transition-all duration-200 text-sm ${
+                          profileFirstNameError ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                        }`}
+                        required
+                      />
+                      {profileFirstNameError && <p className="text-xs text-rose-600 font-semibold mt-1">{profileFirstNameError}</p>}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Nachname</label>
+                      <input 
+                        type="text" 
+                        value={profileLastName}
+                        onChange={(e) => { setProfileLastName(e.target.value); validateProfileLastName(e.target.value); }}
+                        className={`w-full px-4 py-2.5 rounded-xl border bg-stone-50 focus:bg-white focus:ring-2 focus:outline-none transition-all duration-200 text-sm ${
+                          profileLastNameError ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                        }`}
+                        required
+                      />
+                      {profileLastNameError && <p className="text-xs text-rose-600 font-semibold mt-1">{profileLastNameError}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Telefonnummer</label>
+                      <input 
+                        type="text" 
+                        value={profilePhone}
+                        onChange={(e) => { setProfilePhone(e.target.value); validateProfilePhone(e.target.value); }}
+                        className={`w-full px-4 py-2.5 rounded-xl border bg-stone-50 focus:bg-white focus:ring-2 focus:outline-none transition-all duration-200 text-sm ${
+                          profilePhoneError ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                        }`}
+                        required
+                      />
+                      {profilePhoneError && <p className="text-xs text-rose-600 font-semibold mt-1">{profilePhoneError}</p>}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">E-Mail-Adresse</label>
+                      <input 
+                        type="email" 
+                        value={profileEmail}
+                        onChange={(e) => { setProfileEmail(e.target.value); validateProfileEmail(e.target.value); }}
+                        className={`w-full px-4 py-2.5 rounded-xl border bg-stone-50 focus:bg-white focus:ring-2 focus:outline-none transition-all duration-200 text-sm ${
+                          profileEmailError ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500/20' : 'border-stone-200 focus:border-emerald-500 focus:ring-emerald-500/20'
+                        }`}
+                        required
+                      />
+                      {profileEmailError && <p className="text-xs text-rose-600 font-semibold mt-1">{profileEmailError}</p>}
+                    </div>
+                  </div>
+
+                  {/* Swisstopo Autocomplete for location */}
+                  <div className="space-y-1.5 relative">
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Standort (PLZ & Ort)</label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        placeholder="z.B. 8057 Zürich"
+                        value={profileAddress}
+                        onChange={(e) => handleProfileAddressChange(e.target.value)}
+                        onFocus={() => {
+                          if (profileAddress.trim().length > 0 && profileAddressSuggestions.length > 0) {
+                            setShowProfileAddressSuggestions(true);
+                          }
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setShowProfileAddressSuggestions(false), 200);
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                        required
+                        autoComplete="off"
+                      />
+                      {showProfileAddressSuggestions && profileAddressSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 max-h-60 overflow-y-auto divide-y divide-stone-100">
+                          {profileAddressSuggestions.map((suggestion, idx) => (
+                            <button
+                              key={`settings-addr-${suggestion.label}-${idx}`}
+                              type="button"
+                              onClick={() => handleSelectProfileAddress(suggestion)}
+                              className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 text-stone-850 flex items-center justify-between transition-colors duration-150"
+                            >
+                              <span className="font-medium text-stone-850 truncate">{suggestion.label}</span>
+                              <span className="text-xs text-stone-400">Schweiz</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={profileLoading}
+                    className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-300 text-white font-bold px-6 py-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 text-sm cursor-pointer"
+                  >
+                    {profileLoading ? 'Wird gespeichert...' : 'Änderungen speichern'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="lg:col-span-1 space-y-6">
+                <div className="bg-white rounded-3xl p-6 border border-rose-200 shadow-sm space-y-4">
+                  <h3 className="text-lg font-bold text-rose-800 flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-rose-600" />
+                    Gefahrenbereich
+                  </h3>
+                  
+                  <p className="text-xs text-stone-600 leading-relaxed">
+                    Das Löschen deines Kontos ist permanent und unumkehrbar. Alle deine Inserate, Tauschanfragen und Profildaten werden sofort unwiderruflich gelöscht.
+                  </p>
+
+                  <button 
+                    onClick={() => {
+                      setDeleteConfirmText('');
+                      setShowDeleteConfirmModal(true);
+                    }}
+                    className="w-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 hover:border-rose-350 font-bold px-4 py-3 rounded-xl transition-all duration-200 text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Konto & Daten löschen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
 
       {/* Listing Detail & Swap Request Modal */}
@@ -3176,6 +3415,74 @@ function App() {
                   'Bestätigen & Fortfahren'
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Account Deletion Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              if (!deleteLoading) setShowDeleteConfirmModal(false);
+            }}
+          />
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative z-10 border border-stone-100 flex flex-col animate-scale-up space-y-6">
+            <button 
+              onClick={() => setShowDeleteConfirmModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-700 transition-colors duration-200"
+              disabled={deleteLoading}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-6 h-6 animate-bounce" />
+              </div>
+              <h3 className="font-display font-extrabold text-xl text-stone-900">Bist du dir absolut sicher?</h3>
+              <p className="text-xs text-stone-500 leading-relaxed">
+                Diese Aktion löscht dein HofTausch-Konto dauerhaft. Alle deine Inserate, Tauschanfragen und persönlichen Daten werden unwiderruflich gelöscht.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block text-center">
+                  Bitte schreibe <span className="text-rose-700 font-extrabold select-all">LÖSCHEN</span> zur Bestätigung:
+                </label>
+                <input 
+                  type="text" 
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="LÖSCHEN"
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 focus:outline-none transition-all duration-200 text-sm text-center font-bold tracking-widest"
+                  disabled={deleteLoading}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowDeleteConfirmModal(false)}
+                  className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold px-4 py-3 rounded-xl transition-all duration-200 text-xs text-center cursor-pointer"
+                  disabled={deleteLoading}
+                >
+                  Abbrechen
+                </button>
+                <button 
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== 'LÖSCHEN' || deleteLoading}
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:bg-stone-300 text-white font-bold px-4 py-3 rounded-xl transition-all duration-200 text-xs text-center shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {deleteLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <><Trash2 className="w-4 h-4" /> Permanent löschen</>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

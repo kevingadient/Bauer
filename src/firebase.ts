@@ -10,7 +10,8 @@ import {
   signInWithPhoneNumber,
   signOut,
   onAuthStateChanged,
-  RecaptchaVerifier
+  RecaptchaVerifier,
+  deleteUser
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -23,7 +24,9 @@ import {
   setDoc,
   query, 
   orderBy, 
-  onSnapshot 
+  onSnapshot,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import type { Listing, ExchangeRequest } from './types';
 import { INITIAL_LISTINGS, INITIAL_REQUESTS } from './mockData';
@@ -391,4 +394,79 @@ export const saveUserProfile = async (uid: string, profileData: any) => {
     }
   }
   localStorage.setItem(`hoftausch_profile_${uid}`, JSON.stringify(profileData));
+};
+
+export const deleteUserAccountAndData = async (uid: string) => {
+  if (!isMock && auth && db) {
+    const currentUserInstance = auth.currentUser;
+    if (!currentUserInstance || currentUserInstance.uid !== uid) {
+      throw new Error("Nicht autorisiert.");
+    }
+
+    // 1. Delete user profile from Firestore
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+    } catch (e) {
+      console.warn("[HofTausch] Error deleting user profile:", e);
+    }
+
+    // 2. Delete user listings from Firestore
+    try {
+      const listingsRef = collection(db, 'listings');
+      const qListings = query(listingsRef, where('userId', '==', uid));
+      const listingsSnap = await getDocs(qListings);
+      const deletePromises: Promise<void>[] = [];
+      listingsSnap.forEach((docSnap) => {
+        deletePromises.push(deleteDoc(doc(db, 'listings', docSnap.id)));
+      });
+      await Promise.all(deletePromises);
+    } catch (e) {
+      console.warn("[HofTausch] Error deleting user listings:", e);
+    }
+
+    // 3. Delete user requests from Firestore (both sent and received)
+    try {
+      const requestsRef = collection(db, 'requests');
+      
+      // Delete sent requests
+      const qSent = query(requestsRef, where('senderId', '==', uid));
+      const sentSnap = await getDocs(qSent);
+      const sentPromises: Promise<void>[] = [];
+      sentSnap.forEach((docSnap) => {
+        sentPromises.push(deleteDoc(doc(db, 'requests', docSnap.id)));
+      });
+      await Promise.all(sentPromises);
+
+      // Delete received requests
+      const qRecv = query(requestsRef, where('receiverId', '==', uid));
+      const recvSnap = await getDocs(qRecv);
+      const recvPromises: Promise<void>[] = [];
+      recvSnap.forEach((docSnap) => {
+        recvPromises.push(deleteDoc(doc(db, 'requests', docSnap.id)));
+      });
+      await Promise.all(recvPromises);
+    } catch (e) {
+      console.warn("[HofTausch] Error deleting user requests:", e);
+    }
+
+    // 4. Delete Auth User from Firebase Auth
+    await deleteUser(currentUserInstance);
+  } else {
+    // Mock Mode
+    localStorage.removeItem(`hoftausch_profile_${uid}`);
+    localStorage.removeItem('hoftausch_mock_user');
+    
+    // Delete user listings
+    mockListings = mockListings.filter(l => l.userId !== uid);
+    // Delete user requests (sent or received)
+    mockRequests = mockRequests.filter(r => r.senderId !== uid && r.receiverId !== uid);
+    
+    saveMockDatabase();
+    notifyMockListings();
+    notifyMockRequests();
+    
+    // Trigger auth state change
+    mockCurrentUser = null;
+    mockUserListeners.forEach(l => l(null));
+  }
 };
