@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { Listing, ExchangeRequest } from './types';
+import type { Listing, ExchangeRequest, BlogPost } from './types';
 import { 
   checkIsMock, 
   onAuthChanged, 
@@ -51,6 +51,9 @@ import {
   getUserProfile,
   saveUserProfile,
   deleteUserAccountAndData,
+  subscribeToBlog,
+  addBlogPost,
+  deleteBlogPost,
   RecaptchaVerifier,
   auth
 } from './firebase';
@@ -233,6 +236,15 @@ function App() {
   // App data states
   const [listings, setListings] = useState<Listing[]>([]);
   const [requests, setRequests] = useState<ExchangeRequest[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+
+  // Blog creation modal state variables
+  const [showWritePostModal, setShowWritePostModal] = useState(false);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostCategory, setNewPostCategory] = useState('Ratgeber');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostAuthor, setNewPostAuthor] = useState('');
+  const [writePostLoading, setWritePostLoading] = useState(false);
 
   // Navigation: 'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings' | 'about' | 'blog' | 'contribute'
   const [activeTab, setActiveTab] = useState<'landing' | 'market' | 'create' | 'my-listings' | 'my-requests' | 'settings' | 'about' | 'blog' | 'contribute'>('landing');
@@ -574,6 +586,7 @@ function App() {
     if (!currentUser) {
       setListings([]);
       setRequests([]);
+      setBlogPosts([]);
       return;
     }
 
@@ -595,9 +608,19 @@ function App() {
       }
     );
 
+    const unsubBlog = subscribeToBlog(
+      (data) => {
+        setBlogPosts(data);
+      },
+      (error) => {
+        console.warn("[HofTausch] Error loading blog posts:", error);
+      }
+    );
+
     return () => {
       unsubListings();
       unsubRequests();
+      unsubBlog();
     };
   }, [currentUser]);
 
@@ -1233,6 +1256,39 @@ function App() {
       showToast('Fehler beim Löschen des Kontos: ' + error.message, 'error');
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleCreateBlogPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !isAdmin) return;
+
+    if (!newPostTitle.trim() || !newPostContent.trim() || !newPostAuthor.trim()) {
+      showToast('Bitte fülle alle Pflichtfelder aus.', 'error');
+      return;
+    }
+
+    setWritePostLoading(true);
+    try {
+      await addBlogPost({
+        title: newPostTitle.trim(),
+        category: newPostCategory,
+        content: newPostContent.trim(),
+        date: new Date().toISOString(),
+        author: newPostAuthor.trim()
+      });
+      showToast('Blog-Beitrag erfolgreich veröffentlicht!');
+      
+      setNewPostTitle('');
+      setNewPostCategory('Ratgeber');
+      setNewPostContent('');
+      setNewPostAuthor('');
+      setShowWritePostModal(false);
+    } catch (err: any) {
+      console.error("[HofTausch] Error writing blog post:", err);
+      showToast('Fehler beim Speichern des Beitrags: ' + err.message, 'error');
+    } finally {
+      setWritePostLoading(false);
     }
   };
 
@@ -3259,60 +3315,82 @@ function App() {
         {/* Blog Page */}
         {activeTab === 'blog' && (
           <div className="max-w-4xl mx-auto space-y-8 animate-fade-in py-4">
-            <div className="text-center space-y-3">
-              <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">HofTausch Journal</span>
-              <h2 className="font-display font-extrabold text-3xl sm:text-4xl text-stone-900 leading-tight">Blog & Neuigkeiten</h2>
-              <p className="text-stone-600 max-w-xl mx-auto text-sm sm:text-base">
-                Aktuelle Beiträge, nützliche Ratgeber und Erfolgsgeschichten aus unserer Tauschgemeinschaft.
-              </p>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-stone-200 pb-5">
+              <div className="text-center sm:text-left space-y-1.5">
+                <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">HofTausch Journal</span>
+                <h2 className="font-display font-extrabold text-3xl text-stone-900 leading-tight">Blog & Neuigkeiten</h2>
+                <p className="text-stone-600 text-xs sm:text-sm">
+                  Aktuelle Beiträge, nützliche Ratgeber und Erfolgsgeschichten aus unserer Tauschgemeinschaft.
+                </p>
+              </div>
+
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setNewPostTitle('');
+                    setNewPostCategory('Ratgeber');
+                    setNewPostContent('');
+                    setNewPostAuthor('');
+                    setShowWritePostModal(true);
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Beitrag verfassen
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Blog Article 1 */}
-              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
-                <div className="p-6 space-y-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-150 inline-block">Ratgeber</span>
-                  <h3 className="font-display font-bold text-base text-stone-900 leading-tight">Tipps für einen erfolgreichen Futtertausch</h3>
-                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-3">
-                    Beim Tausch von Futter und Silage spielen Qualität und Deklaration eine grosse Rolle. Erfahre, worauf du bei der Übergabe achten musst, um deinen Tauschpartner glücklich zu machen.
-                  </p>
-                </div>
-                <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-400">
-                  <span>12. Juli 2026</span>
-                  <span className="font-semibold text-emerald-600 font-bold">Weiterlesen &rarr;</span>
-                </div>
+            {blogPosts.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-3xl border border-stone-200 shadow-sm">
+                <p className="text-stone-500 italic text-sm">Aktuell sind noch keine Blog-Beiträge vorhanden.</p>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {blogPosts.map(post => {
+                  let catColorClass = 'bg-stone-50 text-stone-700 border-stone-150';
+                  if (post.category === 'Ratgeber') catColorClass = 'bg-emerald-50 text-emerald-700 border-emerald-150';
+                  else if (post.category === 'Erfahrungsbericht') catColorClass = 'bg-amber-50 text-amber-700 border-amber-150';
+                  else if (post.category === 'Wissen') catColorClass = 'bg-blue-50 text-blue-700 border-blue-150';
 
-              {/* Blog Article 2 */}
-              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
-                <div className="p-6 space-y-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-150 inline-block">Erfahrungsbericht</span>
-                  <h3 className="font-display font-bold text-base text-stone-900 leading-tight">Nachbarschaftshilfe im Aargau</h3>
-                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-3">
-                    Bauer Ueli berichtet von seinen Erfahrungen mit HofTausch: „Ich brauchte dringend Hilfe bei der Obsternte und konnte im Gegenzug mein Rinderfutter anbieten. Innerhalb von 2 Tagen war alles geregelt.“
-                  </p>
-                </div>
-                <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-400">
-                  <span>05. Juli 2026</span>
-                  <span className="font-semibold text-emerald-600 font-bold">Weiterlesen &rarr;</span>
-                </div>
+                  return (
+                    <div key={post.id} className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all duration-300 relative group">
+                      {isAdmin && (
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(`Möchtest du den Beitrag "${post.title}" wirklich löschen?`)) {
+                              try {
+                                await deleteBlogPost(post.id);
+                                showToast('Beitrag erfolgreich gelöscht.');
+                              } catch (err: any) {
+                                showToast('Fehler beim Löschen: ' + err.message, 'error');
+                              }
+                            }
+                          }}
+                          className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/90 border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-150 shadow-sm z-10"
+                          title="Beitrag löschen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      
+                      <div className="p-6 space-y-3">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border inline-block ${catColorClass}`}>
+                          {post.category}
+                        </span>
+                        <h3 className="font-display font-bold text-base text-stone-900 leading-tight">{post.title}</h3>
+                        <p className="text-xs text-stone-600 leading-relaxed whitespace-pre-line">{post.content}</p>
+                      </div>
+                      
+                      <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-450">
+                        <span className="font-medium">Von: {post.author}</span>
+                        <span>{formatDate(post.date)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-
-              {/* Blog Article 3 */}
-              <div className="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow duration-300">
-                <div className="p-6 space-y-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-150 inline-block">Wissen</span>
-                  <h3 className="font-display font-bold text-base text-stone-900 leading-tight">Gemeinsam Maschinen nutzen</h3>
-                  <p className="text-xs text-stone-500 leading-relaxed line-clamp-3">
-                    Spezialmaschinen kosten viel Geld in der Anschaffung und stehen oft monatelang ungenutzt im Schuppen. Maschinengemeinschaften helfen, die Auslastung zu optimieren und Betriebskosten drastisch zu senken.
-                  </p>
-                </div>
-                <div className="px-6 py-4 bg-stone-50 border-t border-stone-150 flex items-center justify-between text-[10px] text-stone-400">
-                  <span>28. Juni 2026</span>
-                  <span className="font-semibold text-emerald-600 font-bold">Weiterlesen &rarr;</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -3859,6 +3937,112 @@ function App() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Blog Post Writer Modal */}
+      {showWritePostModal && (
+        <div className="fixed inset-0 z-55 overflow-y-auto flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              if (!writePostLoading) setShowWritePostModal(false);
+            }}
+          />
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative z-10 border border-stone-100 flex flex-col animate-scale-up space-y-5">
+            <button 
+              onClick={() => setShowWritePostModal(false)}
+              className="absolute top-5 right-5 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-700 transition-colors duration-200 cursor-pointer"
+              disabled={writePostLoading}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="space-y-1.5">
+              <h3 className="font-display font-extrabold text-xl text-stone-900">Blog-Beitrag schreiben</h3>
+              <p className="text-xs text-stone-550">Veröffentliche einen neuen Beitrag im HofTausch Journal.</p>
+            </div>
+
+            <form onSubmit={handleCreateBlogPost} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Titel des Beitrags</label>
+                <input 
+                  type="text" 
+                  placeholder="z.B. Erfolgreicher Weidetag im Jura"
+                  value={newPostTitle}
+                  onChange={(e) => setNewPostTitle(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                  required
+                  disabled={writePostLoading}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Kategorie</label>
+                  <select 
+                    value={newPostCategory}
+                    onChange={(e) => setNewPostCategory(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm cursor-pointer"
+                    disabled={writePostLoading}
+                  >
+                    <option value="Ratgeber">Ratgeber</option>
+                    <option value="Erfahrungsbericht">Erfahrungsbericht</option>
+                    <option value="Wissen">Wissen</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Autor/-in / Signatur</label>
+                  <input 
+                    type="text" 
+                    placeholder="z.B. Redaktion HofTausch"
+                    value={newPostAuthor}
+                    onChange={(e) => setNewPostAuthor(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                    required
+                    disabled={writePostLoading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Inhalt / Text</label>
+                <textarea 
+                  rows={6}
+                  placeholder="Schreibe deinen interessanten Artikel hier..."
+                  value={newPostContent}
+                  onChange={(e) => setNewPostContent(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-stone-50 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
+                  required
+                  disabled={writePostLoading}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setShowWritePostModal(false)}
+                  className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold px-4 py-3 rounded-xl transition-all duration-200 text-xs text-center cursor-pointer"
+                  disabled={writePostLoading}
+                >
+                  Abbrechen
+                </button>
+                <button 
+                  type="submit"
+                  disabled={writePostLoading}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-300 text-white font-bold px-4 py-3 rounded-xl transition-all duration-200 text-xs text-center shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {writePostLoading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Beitrag veröffentlichen'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

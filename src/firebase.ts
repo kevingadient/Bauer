@@ -28,8 +28,35 @@ import {
   where,
   getDocs
 } from 'firebase/firestore';
-import type { Listing, ExchangeRequest } from './types';
+import type { Listing, ExchangeRequest, BlogPost } from './types';
 import { INITIAL_LISTINGS, INITIAL_REQUESTS } from './mockData';
+
+const INITIAL_BLOG_POSTS: BlogPost[] = [
+  {
+    id: 'post_1',
+    title: 'Tipps für einen erfolgreichen Futtertausch',
+    category: 'Ratgeber',
+    content: 'Beim Tausch von Futter und Silage spielen Qualität und Deklaration eine grosse Rolle. Erfahre, worauf du bei der Übergabe achten musst, um deinen Tauschpartner glücklich zu machen.',
+    date: '2026-07-12T12:00:00Z',
+    author: 'Redaktion HofTausch'
+  },
+  {
+    id: 'post_2',
+    title: 'Nachbarschaftshilfe im Aargau: Ein Erfahrungsbericht',
+    category: 'Erfahrungsbericht',
+    content: 'Bauer Ueli berichtet von seinen Erfahrungen mit HofTausch: „Ich brauchte dringend Hilfe bei der Obsternte und konnte im Gegenzug mein Rinderfutter anbieten. Innerhalb von 2 Tagen war alles geregelt.“',
+    date: '2026-07-05T14:30:00Z',
+    author: 'Ueli A.'
+  },
+  {
+    id: 'post_3',
+    title: 'Maschinengemeinschaften: Kostenteilung leicht gemacht',
+    category: 'Wissen',
+    content: 'Spezialmaschinen kosten viel Geld in der Anschaffung und stehen oft monatelang ungenutzt im Schuppen. Maschinengemeinschaften helfen, die Auslastung zu optimieren und Betriebskosten drastisch zu senken.',
+    date: '2026-06-28T09:15:00Z',
+    author: 'Redaktion HofTausch'
+  }
+];
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -54,8 +81,10 @@ let mockCurrentUser: any = null;
 // Mock Database States
 let mockListings: Listing[] = [];
 let mockRequests: ExchangeRequest[] = [];
+let mockBlogPosts: BlogPost[] = [];
 let mockListingsListeners: ((listings: Listing[]) => void)[] = [];
 let mockRequestsListeners: ((requests: ExchangeRequest[]) => void)[] = [];
+let mockBlogListeners: ((posts: BlogPost[]) => void)[] = [];
 
 // Initialize Mock database lists
 const initMockDatabase = () => {
@@ -64,6 +93,9 @@ const initMockDatabase = () => {
   
   const savedRequests = localStorage.getItem('hoftausch_requests');
   mockRequests = savedRequests ? JSON.parse(savedRequests) : INITIAL_REQUESTS;
+
+  const savedBlog = localStorage.getItem('hoftausch_blog_posts');
+  mockBlogPosts = savedBlog ? JSON.parse(savedBlog) : INITIAL_BLOG_POSTS;
   
   const savedUser = localStorage.getItem('hoftausch_mock_user');
   mockCurrentUser = savedUser ? JSON.parse(savedUser) : null;
@@ -72,6 +104,7 @@ const initMockDatabase = () => {
 const saveMockDatabase = () => {
   localStorage.setItem('hoftausch_listings', JSON.stringify(mockListings));
   localStorage.setItem('hoftausch_requests', JSON.stringify(mockRequests));
+  localStorage.setItem('hoftausch_blog_posts', JSON.stringify(mockBlogPosts));
   if (mockCurrentUser) {
     localStorage.setItem('hoftausch_mock_user', JSON.stringify(mockCurrentUser));
   } else {
@@ -81,6 +114,7 @@ const saveMockDatabase = () => {
 
 const notifyMockListings = () => mockListingsListeners.forEach(l => l([...mockListings]));
 const notifyMockRequests = () => mockRequestsListeners.forEach(l => l([...mockRequests]));
+const notifyMockBlog = () => mockBlogListeners.forEach(l => l([...mockBlogPosts]));
 
 // Setup
 if (hasValidConfig) {
@@ -477,5 +511,54 @@ export const deleteUserAccountAndData = async (uid: string) => {
     // Trigger auth state change
     mockCurrentUser = null;
     mockUserListeners.forEach(l => l(null));
+  }
+};
+
+export const subscribeToBlog = (callback: (posts: BlogPost[]) => void, onError?: (error: Error) => void) => {
+  if (!isMock && db) {
+    const q = query(collection(db, 'blog'), orderBy('date', 'desc'));
+    return onSnapshot(q, 
+      (snapshot) => {
+        const postsList: BlogPost[] = [];
+        snapshot.forEach((doc) => {
+          postsList.push({ id: doc.id, ...doc.data() } as BlogPost);
+        });
+        callback(postsList);
+      },
+      (error) => {
+        console.error("[Firestore] Blog subscription error:", error);
+        if (onError) onError(error);
+      }
+    );
+  } else {
+    mockBlogListeners.push(callback);
+    setTimeout(() => callback([...mockBlogPosts]), 10);
+    return () => {
+      mockBlogListeners = mockBlogListeners.filter(l => l !== callback);
+    };
+  }
+};
+
+export const addBlogPost = async (post: Omit<BlogPost, 'id'>) => {
+  if (!isMock && db) {
+    const docRef = await addDoc(collection(db, 'blog'), post);
+    return docRef.id;
+  } else {
+    const newId = 'post_' + Date.now();
+    const newPost: BlogPost = { id: newId, ...post };
+    mockBlogPosts = [newPost, ...mockBlogPosts];
+    saveMockDatabase();
+    notifyMockBlog();
+    return newId;
+  }
+};
+
+export const deleteBlogPost = async (id: string) => {
+  if (!isMock && db) {
+    await deleteDoc(doc(db, 'blog', id));
+  } else {
+    mockBlogPosts = mockBlogPosts.filter(p => p.id !== id);
+    saveMockDatabase();
+    notifyMockBlog();
   }
 };

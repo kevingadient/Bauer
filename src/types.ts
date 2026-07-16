@@ -28,3 +28,12 @@ export interface ExchangeRequest {
   senderId?: string; // Firebase user ID of request sender
   receiverId?: string; // Firebase user ID of listing owner
 }
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  category: string;
+  content: string;
+  date: string;
+  author: string;
+}
