@@ -1798,7 +1798,10 @@ function App() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-stone-200/80">
         <div className="w-full px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setActiveTab('landing')}
+            className="flex items-center gap-3 text-left focus:outline-none cursor-pointer hover:opacity-85 transition-opacity"
+          >
             <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/20">
               <Handshake className="w-6 h-6" />
             </div>
@@ -1806,7 +1809,7 @@ function App() {
               <span className="font-display font-bold text-2xl tracking-tight text-stone-900">Hof<span className="text-emerald-600">Tausch</span></span>
               <p className="text-[10px] text-stone-500 font-semibold tracking-wider uppercase">Tauschbörse für Bauern</p>
             </div>
-          </div>
+          </button>
           
           <nav className="hidden md:flex items-center gap-2">
             <button 
@@ -4115,7 +4118,10 @@ function App() {
       {/* Footer */}
       <footer className="bg-stone-900 text-stone-400 py-12 mt-16 border-t border-stone-850">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setActiveTab('landing')}
+            className="flex items-center gap-3 text-left focus:outline-none cursor-pointer hover:opacity-85 transition-opacity"
+          >
             <div className="w-10 h-10 rounded-full bg-emerald-600/20 flex items-center justify-center text-emerald-500">
               <Handshake className="w-5 h-5" />
             </div>
@@ -4123,7 +4129,7 @@ function App() {
               <span className="font-display font-bold text-lg text-white">Hof<span className="text-emerald-500">Tausch</span></span>
               <p className="text-[9px] text-stone-500 uppercase tracking-wider">Lokale Kooperation & Tauschbörse 🇨🇭</p>
             </div>
-          </div>
+          </button>
 
           {/* Footer Navigation Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-stone-400">
