@@ -3,7 +3,7 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   FacebookAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
@@ -186,8 +186,7 @@ export const signInPhone = async (phoneNumber: string, appVerifier: any) => {
 export const signInGoogle = async () => {
   if (!isMock && auth) {
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+    await signInWithRedirect(auth, provider);
   } else {
     mockCurrentUser = {
       uid: 'mock_user_google_josef',
@@ -204,8 +203,7 @@ export const signInGoogle = async () => {
 export const signInFacebook = async () => {
   if (!isMock && auth) {
     const provider = new FacebookAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+    await signInWithRedirect(auth, provider);
   } else {
     mockCurrentUser = {
       uid: 'mock_user_facebook_huber',
