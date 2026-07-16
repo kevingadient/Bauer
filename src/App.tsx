@@ -298,11 +298,35 @@ function App() {
   }, []);
 
 
+  // Query parameter ?no-track=true handler
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('no-track') === 'true') {
+      console.log("[HofTausch] Manual opt-out triggered via query parameter.");
+      localStorage.setItem('umami.disabled', '1');
+      document.cookie = "hoftausch_no_track=true; path=/; max-age=31536000; Secure; SameSite=Strict";
+      showToast('Opt-out: Tracking für diesen Browser deaktiviert.');
+    }
+  }, []);
+
   // Umami Analytics dynamic tracker injection
   useEffect(() => {
     const websiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID;
     const scriptUrl = import.meta.env.VITE_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js';
     
+    // Check if tracking is disabled via cookie, localStorage or if the user is already admin
+    const cookies = document.cookie.split(';');
+    const isNoTrackCookie = cookies.some(c => {
+      const [key, val] = c.split('=').map(s => s.trim());
+      return (key === 'hoftausch_no_track' && val === 'true') || (key === 'umami.disabled' && val === '1');
+    });
+    const isNoTrackLocal = localStorage.getItem('umami.disabled') === '1';
+
+    if (isNoTrackCookie || isNoTrackLocal) {
+      console.log("[HofTausch] Umami tracking is disabled for this browser (Admin/No-Track cookie detected).");
+      return;
+    }
+
     if (websiteId) {
       const existingScript = document.querySelector(`script[data-website-id="${websiteId}"]`);
       if (!existingScript) {
@@ -322,11 +346,36 @@ function App() {
     }
   }, []);
 
+  // Disable Umami tracking for Admin users automatically on login
+  useEffect(() => {
+    if (isAdmin) {
+      console.log("[HofTausch] Admin detected. Disabling Umami analytics tracking.");
+      localStorage.setItem('umami.disabled', '1');
+      document.cookie = "hoftausch_no_track=true; path=/; max-age=31536000; Secure; SameSite=Strict";
+      
+      const script = document.querySelector('script[data-website-id]');
+      if (script) {
+        script.remove();
+      }
+    }
+  }, [isAdmin]);
+
   // Global click tracker for Umami
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const umami = (window as any).umami;
       if (!umami) return;
+
+      // Do not track clicks if no-track flags are set or user is admin
+      const cookies = document.cookie.split(';');
+      const isNoTrackCookie = cookies.some(c => {
+        const [key, val] = c.split('=').map(s => s.trim());
+        return (key === 'hoftausch_no_track' && val === 'true') || (key === 'umami.disabled' && val === '1');
+      });
+      const isNoTrackLocal = localStorage.getItem('umami.disabled') === '1';
+      if (isNoTrackCookie || isNoTrackLocal || isAdmin) {
+        return;
+      }
 
       const target = e.target as HTMLElement;
       const interactiveEl = target.closest('button, a, [role="button"]');
@@ -352,7 +401,7 @@ function App() {
 
     document.addEventListener('click', handleGlobalClick);
     return () => document.removeEventListener('click', handleGlobalClick);
-  }, []);
+  }, [isAdmin]);
 
 
   // Magic Link handler on mount
