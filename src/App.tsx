@@ -306,6 +306,7 @@ function App() {
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [fabBottom, setFabBottom] = useState(24);
   
   const [profileFirstName, setProfileFirstName] = useState('');
   const [profileLastName, setProfileLastName] = useState('');
@@ -400,6 +401,33 @@ function App() {
       setAuthLoading(false);
     });
     return unsubscribe;
+  }, []);
+
+  // Dynamic FAB position adjustment to stay above footer
+  useEffect(() => {
+    const handleScroll = () => {
+      const footer = document.querySelector('footer');
+      if (!footer) return;
+      
+      const footerRect = footer.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      if (footerRect.top < windowHeight) {
+        const visibleFooterHeight = windowHeight - footerRect.top;
+        setFabBottom(visibleFooterHeight + 24);
+      } else {
+        setFabBottom(24);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
 
 
@@ -3687,7 +3715,8 @@ function App() {
       {currentUser && (
         <button
           onClick={() => setActiveTab('create')}
-          className="fixed bottom-6 right-6 z-50 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border border-emerald-500/20 group w-14 h-14 sm:w-auto sm:px-6"
+          className="fixed right-6 z-50 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 border border-emerald-500/20 group w-14 h-14 sm:w-auto sm:px-6"
+          style={{ bottom: `${fabBottom}px` }}
           title="Neues Inserat erstellen"
         >
           <PlusCircle className="w-6 h-6 shrink-0 transition-transform duration-300 group-hover:rotate-90" />
