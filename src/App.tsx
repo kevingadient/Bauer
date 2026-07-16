@@ -297,6 +297,30 @@ function App() {
     return unsubscribe;
   }, []);
 
+  // Umami Analytics dynamic tracker injection
+  useEffect(() => {
+    const websiteId = import.meta.env.VITE_UMAMI_WEBSITE_ID;
+    const scriptUrl = import.meta.env.VITE_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js';
+    
+    if (websiteId) {
+      const existingScript = document.querySelector(`script[data-website-id="${websiteId}"]`);
+      if (!existingScript) {
+        const script = document.createElement('script');
+        script.async = true;
+        script.defer = true;
+        script.src = scriptUrl;
+        script.setAttribute('data-website-id', websiteId);
+        
+        const domains = import.meta.env.VITE_UMAMI_DOMAINS;
+        if (domains) {
+          script.setAttribute('data-domains', domains);
+        }
+        
+        document.head.appendChild(script);
+      }
+    }
+  }, []);
+
 
   // Magic Link handler on mount
   useEffect(() => {
