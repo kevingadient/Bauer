@@ -351,6 +351,15 @@ export const updateRequestStatus = async (id: string, status: 'akzeptiert' | 'ab
     notifyMockRequests();
   }
 };
+export const deleteExchangeRequest = async (id: string) => {
+  if (!isMock && db) {
+    await deleteDoc(doc(db, 'requests', id));
+  } else {
+    mockRequests = mockRequests.filter(r => r.id !== id);
+    saveMockDatabase();
+    notifyMockRequests();
+  }
+};
 
 export const getUserProfile = async (uid: string): Promise<any | null> => {
   if (!isMock && db) {

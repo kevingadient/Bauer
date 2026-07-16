@@ -47,6 +47,7 @@ import {
   deleteListing, 
   addExchangeRequest, 
   updateRequestStatus,
+  deleteExchangeRequest,
   getUserProfile,
   saveUserProfile,
   deleteUserAccountAndData,
@@ -1782,7 +1783,10 @@ function App() {
 
           {/* User profile & Logout */}
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 pl-4 border-l border-stone-200">
+            <button
+              onClick={() => setActiveTab('settings')}
+              className="hidden sm:flex items-center gap-2 pl-4 border-l border-stone-200 hover:opacity-80 transition-opacity cursor-pointer text-left focus:outline-none"
+            >
               {currentUser.photoURL ? (
                 <img src={currentUser.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-stone-200" />
               ) : (
@@ -1797,7 +1801,7 @@ function App() {
                 </div>
                 <p className="text-stone-400 truncate">{currentUser.email || currentUser.phoneNumber}</p>
               </div>
-            </div>
+            </button>
             
             <button
               onClick={handleLogout}
@@ -3003,6 +3007,137 @@ function App() {
                     Konto & Daten löschen
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Added User Data Tables Section */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm space-y-8">
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+                  <List className="w-5 h-5 text-emerald-600" />
+                  Deine hinterlegten Daten verwalten
+                </h3>
+                <p className="text-xs text-stone-500">Hier siehst du alle von dir erstellten Einträge und kannst diese einzeln entfernen.</p>
+              </div>
+
+              {/* Listings Table */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-stone-700 uppercase tracking-wider">Veröffentlichte Inserate ({listings.filter(l => l.userId === currentUser.uid).length})</h4>
+                {listings.filter(l => l.userId === currentUser.uid).length === 0 ? (
+                  <p className="text-xs text-stone-500 italic bg-stone-50 p-4 rounded-xl border border-stone-150">Du hast noch keine Inserate veröffentlicht.</p>
+                ) : (
+                  <div className="overflow-x-auto border border-stone-200 rounded-xl">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-200 font-bold text-stone-700">
+                          <th className="p-3.5">Kategorie</th>
+                          <th className="p-3.5">Titel</th>
+                          <th className="p-3.5">Standort</th>
+                          <th className="p-3.5">Erstellt am</th>
+                          <th className="p-3.5 text-right">Aktionen</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-150">
+                        {listings.filter(l => l.userId === currentUser.uid).map(listing => {
+                          const catStyle = CATEGORY_STYLES[listing.category] || CATEGORY_STYLES.Sonstiges;
+                          return (
+                            <tr key={listing.id} className="hover:bg-stone-50/40 transition-colors">
+                              <td className="p-3.5">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${catStyle.bg} ${catStyle.text} ${catStyle.border} font-semibold text-[10px]`}>
+                                  <img src={catStyle.icon} alt="" className="w-3.5 h-3.5" />
+                                  {listing.category}
+                                </span>
+                              </td>
+                              <td className="p-3.5 font-semibold text-stone-850">{listing.title}</td>
+                              <td className="p-3.5 text-stone-600">{listing.location}</td>
+                              <td className="p-3.5 text-stone-500">{formatDate(listing.date)}</td>
+                              <td className="p-3.5 text-right">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    if (window.confirm(`Möchtest du das Inserat "${listing.title}" wirklich dauerhaft löschen?`)) {
+                                      try {
+                                        await deleteListing(listing.id);
+                                        showToast('Inserat erfolgreich gelöscht.');
+                                      } catch (err: any) {
+                                        showToast('Fehler beim Löschen: ' + err.message, 'error');
+                                      }
+                                    }
+                                  }}
+                                  className="p-1.5 rounded-lg border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-200 cursor-pointer"
+                                  title="Inserat löschen"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Requests Table */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-stone-700 uppercase tracking-wider">Gesendete Tauschanfragen ({requests.filter(r => r.senderId === currentUser.uid).length})</h4>
+                {requests.filter(r => r.senderId === currentUser.uid).length === 0 ? (
+                  <p className="text-xs text-stone-500 italic bg-stone-50 p-4 rounded-xl border border-stone-150">Du hast noch keine Tauschanfragen versendet.</p>
+                ) : (
+                  <div className="overflow-x-auto border border-stone-200 rounded-xl">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-stone-50 border-b border-stone-200 font-bold text-stone-700">
+                          <th className="p-3.5">Ziel-Inserat</th>
+                          <th className="p-3.5">Dein Tauschangebot</th>
+                          <th className="p-3.5">Status</th>
+                          <th className="p-3.5">Gesendet am</th>
+                          <th className="p-3.5 text-right">Aktionen</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-150">
+                        {requests.filter(r => r.senderId === currentUser.uid).map(req => (
+                          <tr key={req.id} className="hover:bg-stone-50/40 transition-colors">
+                            <td className="p-3.5 font-semibold text-stone-850">{req.listingTitle}</td>
+                            <td className="p-3.5 text-stone-600 truncate max-w-[200px]">{req.offeredItem}</td>
+                            <td className="p-3.5">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                                req.status === 'akzeptiert' 
+                                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                                  : req.status === 'abgelehnt'
+                                    ? 'bg-rose-50 border-rose-200 text-rose-700'
+                                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                              }`}>
+                                {req.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-stone-500">{formatDate(req.date)}</td>
+                            <td className="p-3.5 text-right">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (window.confirm('Möchtest du diese Tauschanfrage wirklich zurückziehen?')) {
+                                    try {
+                                      await deleteExchangeRequest(req.id);
+                                      showToast('Tauschanfrage erfolgreich gelöscht.');
+                                    } catch (err: any) {
+                                      showToast('Fehler beim Löschen: ' + err.message, 'error');
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg border border-stone-200 hover:border-rose-350 hover:bg-rose-50 text-stone-400 hover:text-rose-600 transition-all duration-200 cursor-pointer"
+                                title="Anfrage zurückziehen"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>
