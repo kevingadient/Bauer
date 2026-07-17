@@ -429,6 +429,14 @@ function App() {
   const [reqImage, setReqImage] = useState('');
   const [reqImageLoading, setReqImageLoading] = useState(false);
 
+  // Camera Modal state and refs
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [cameraTarget, setCameraTarget] = useState<'listing' | 'request' | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [cameraError, setCameraError] = useState('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
   // Auth Forms state
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [emailInput, setEmailInput] = useState('');
@@ -1412,6 +1420,125 @@ function App() {
       setFeedbackLoading(false);
     }
   };
+
+  const startCamera = async (target: 'listing' | 'request') => {
+    setCameraTarget(target);
+    setIsCameraModalOpen(true);
+    setCameraError('');
+    
+    // Wait a brief tick for the modal/video element to mount
+    setTimeout(async () => {
+      try {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(t => t.stop());
+        }
+        
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode },
+          audio: false
+        });
+        
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play();
+        }
+      } catch (err: any) {
+        console.error("[HofTausch] Camera access error:", err);
+        setCameraError('Kamera konnte nicht gestartet werden. Bitte erteile die Berechtigung.');
+      }
+    }, 200);
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setIsCameraModalOpen(false);
+    setCameraTarget(null);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    
+    try {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      
+      // Target max resolution of 800px on the longest side
+      const MAX_SIZE = 800;
+      let width = video.videoWidth || 640;
+      let height = video.videoHeight || 480;
+      
+      if (width > height) {
+        if (width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        }
+      } else {
+        if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        
+        if (cameraTarget === 'listing') {
+          setNewImage(dataUrl);
+        } else if (cameraTarget === 'request') {
+          setReqImage(dataUrl);
+        }
+        showToast('Foto erfolgreich aufgenommen!');
+      }
+    } catch (err: any) {
+      showToast('Fehler bei der Aufnahme: ' + err.message, 'error');
+    } finally {
+      stopCamera();
+    }
+  };
+
+  const toggleCameraFacing = () => {
+    const newFacing = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newFacing);
+    
+    // Re-request stream with the new facingMode
+    if (cameraTarget) {
+      setTimeout(async () => {
+        try {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(t => t.stop());
+          }
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: newFacing },
+            audio: false
+          });
+          streamRef.current = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play();
+          }
+        } catch (err) {
+          console.error("[HofTausch] Error switching camera:", err);
+        }
+      }, 50);
+    }
+  };
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
 
   // Submission handler after user confirms their contact details in the modal
   const handleConfirmProfileAndSubmit = async () => {
@@ -2691,7 +2818,7 @@ function App() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Foto hinzufügen (Optional)</label>
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
                     <label className="flex items-center gap-2 px-4 py-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 cursor-pointer transition-all duration-200 text-sm font-semibold shadow-sm w-full sm:w-auto justify-center">
                       <Camera className="w-5 h-5 text-stone-500" />
                       <span>{newImage ? 'Anderes Foto wählen' : 'Foto hochladen'}</span>
@@ -2714,6 +2841,15 @@ function App() {
                         className="hidden"
                       />
                     </label>
+
+                    <button
+                      type="button"
+                      onClick={() => startCamera('listing')}
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 cursor-pointer transition-all duration-200 text-sm font-semibold shadow-sm w-full sm:w-auto justify-center"
+                    >
+                      <Camera className="w-5 h-5 text-emerald-600" />
+                      <span>Foto aufnehmen</span>
+                    </button>
 
                     {imageLoading && (
                       <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
@@ -4005,7 +4141,7 @@ function App() {
 
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Foto von deinem Angebot (Optional)</label>
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
                       <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 cursor-pointer transition-all duration-200 text-xs font-semibold shadow-sm w-full sm:w-auto justify-center">
                         <Camera className="w-4 h-4 text-stone-500" />
                         <span>{reqImage ? 'Anderes Foto wählen' : 'Foto hochladen'}</span>
@@ -4028,6 +4164,15 @@ function App() {
                           className="hidden"
                         />
                       </label>
+
+                      <button
+                        type="button"
+                        onClick={() => startCamera('request')}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 cursor-pointer transition-all duration-200 text-xs font-semibold shadow-sm w-full sm:w-auto justify-center"
+                      >
+                        <Camera className="w-4 h-4 text-emerald-600" />
+                        <span>Foto aufnehmen</span>
+                      </button>
 
                       {reqImageLoading && (
                         <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
@@ -4068,6 +4213,69 @@ function App() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Camera Capture Modal */}
+      {isCameraModalOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 relative flex flex-col items-center gap-4 animate-scale-up">
+            <div className="w-full flex items-center justify-between pb-3 border-b border-stone-100">
+              <h3 className="font-display font-bold text-lg text-stone-900 flex items-center gap-2">
+                <Camera className="w-5 h-5 text-emerald-600" />
+                Foto aufnehmen
+              </h3>
+              <button 
+                type="button" 
+                onClick={stopCamera}
+                className="p-1.5 rounded-lg hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {cameraError ? (
+              <div className="py-8 text-center space-y-4">
+                <p className="text-stone-600 font-medium">{cameraError}</p>
+                <button 
+                  type="button" 
+                  onClick={stopCamera}
+                  className="px-6 py-2.5 rounded-xl bg-stone-900 text-white font-semibold text-sm"
+                >
+                  Schliessen
+                </button>
+              </div>
+            ) : (
+              <div className="w-full flex flex-col items-center gap-4">
+                <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black border border-stone-200 shadow-inner">
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={toggleCameraFacing}
+                    className="flex-1 border border-stone-300 text-stone-700 font-semibold px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors duration-200 text-sm flex items-center justify-center gap-1.5"
+                  >
+                    <ArrowRightLeft className="w-4 h-4" /> Kamera wechseln
+                  </button>
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-3 rounded-xl hover:shadow-lg transition-all duration-200 text-sm flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4" /> Foto schiessen
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
