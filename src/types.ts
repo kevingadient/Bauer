@@ -27,6 +27,7 @@ export interface ExchangeRequest {
   date: string;
   senderId?: string; // Firebase user ID of request sender
   receiverId?: string; // Firebase user ID of listing owner
+  image?: string;
 }
 
 export interface BlogPost {

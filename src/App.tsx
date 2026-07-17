@@ -25,7 +25,8 @@ import {
   Pencil,
   Menu,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Camera
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -218,6 +219,49 @@ const fetchCoordsForZip = async (zip: string) => {
   return null;
 };
 
+const resizeAndConvertToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality compression
+          resolve(dataUrl);
+        } else {
+          reject(new Error("Canvas context is not available"));
+        }
+      };
+      img.onerror = () => reject(new Error("Image load error"));
+      img.src = event.target?.result as string;
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+};
+
 const formatDate = (dateStr: string): string => {
   try {
     const d = new Date(dateStr);
@@ -375,12 +419,15 @@ function App() {
   const [newCategory, setNewCategory] = useState<Listing['category']>('Futter');
   const [newOffer, setNewOffer] = useState('');
   const [newSeek, setNewSeek] = useState('');
-
+  const [newImage, setNewImage] = useState('');
+  const [imageLoading, setImageLoading] = useState(false);
 
   // Exchange request form state
   const [reqOfferedItem, setReqOfferedItem] = useState('');
   const [reqMessage, setReqMessage] = useState('');
   const [reqFarmerName, setReqFarmerName] = useState('');
+  const [reqImage, setReqImage] = useState('');
+  const [reqImageLoading, setReqImageLoading] = useState(false);
 
   // Auth Forms state
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
@@ -1052,6 +1099,7 @@ function App() {
     setNewCategory(listing.category);
     setNewOffer(listing.descriptionOffer);
     setNewSeek(listing.descriptionSeek);
+    setNewImage(listing.image || '');
     
     const ownName = `${profileFirstName.trim()} ${profileLastName.trim()}`;
     if (listing.farmerName === ownName && listing.location === profileAddress) {
@@ -1213,7 +1261,8 @@ function App() {
         location: finalLocation,
         farmerName: finalFarmerName,
         contact: finalContact,
-        coordinates: coords
+        coordinates: coords,
+        image: newImage || undefined
       });
       showToast('Inserat erfolgreich aktualisiert!');
       setEditingListing(null);
@@ -1234,7 +1283,8 @@ function App() {
         date: dateString,
         expiryDate: expiryDateString,
         userId: currentUser.uid,
-        coordinates: coords
+        coordinates: coords,
+        image: newImage || undefined
       });
       showToast('Inserat erfolgreich veröffentlicht!');
     }
@@ -1243,6 +1293,7 @@ function App() {
     setNewTitle('');
     setNewOffer('');
     setNewSeek('');
+    setNewImage('');
     setSelectedContactType('self');
     setActiveTab('my-listings');
   };
@@ -1416,7 +1467,8 @@ function App() {
           status: 'offen',
           date: new Date().toISOString().split('T')[0],
           senderId: currentUser.uid,
-          receiverId: selectedListing.userId || 'demo'
+          receiverId: selectedListing.userId || 'demo',
+          image: reqImage || undefined
         });
 
         showToast('Tauschanfrage erfolgreich gesendet!');
@@ -1425,6 +1477,7 @@ function App() {
         setReqOfferedItem('');
         setReqMessage('');
         setReqFarmerName('');
+        setReqImage('');
         setIsExchangeModalOpen(false);
       }
 
@@ -2417,6 +2470,12 @@ function App() {
                               </div>
                             </div>
 
+                            {listing.image && (
+                              <div className="w-full h-36 rounded-xl overflow-hidden border border-stone-200 shadow-sm">
+                                <img src={listing.image} alt={listing.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              </div>
+                            )}
+
                             <div className="space-y-1">
                               <h4 className="font-display font-bold text-lg text-stone-900 group-hover:text-emerald-700 transition-colors duration-200 line-clamp-1">
                                 {listing.title}
@@ -2628,6 +2687,52 @@ function App() {
                     className="w-full px-4 py-3 rounded-xl border border-stone-200 bg-white/50 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all duration-200 text-sm"
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Foto hinzufügen (Optional)</label>
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <label className="flex items-center gap-2 px-4 py-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 cursor-pointer transition-all duration-200 text-sm font-semibold shadow-sm w-full sm:w-auto justify-center">
+                      <Camera className="w-5 h-5 text-stone-500" />
+                      <span>{newImage ? 'Anderes Foto wählen' : 'Foto hochladen'}</span>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setImageLoading(true);
+                          try {
+                            const base64 = await resizeAndConvertToBase64(file);
+                            setNewImage(base64);
+                          } catch (err: any) {
+                            showToast('Fehler beim Laden des Bildes: ' + err.message, 'error');
+                          } finally {
+                            setImageLoading(false);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {imageLoading && (
+                      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+
+                    {newImage && !imageLoading && (
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-stone-200 shadow-sm group">
+                        <img src={newImage} alt="Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setNewImage('')}
+                          className="absolute inset-0 bg-stone-900/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+                          title="Foto entfernen"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <hr className="border-stone-200/60 my-6" />
@@ -3022,6 +3127,21 @@ function App() {
                                   <div className="bg-stone-50 rounded-xl p-3 border border-stone-200/60 text-xs text-stone-700 space-y-1">
                                     <p><strong>Bietet im Gegenzug:</strong> {req.offeredItem}</p>
                                     <p className="italic text-stone-600">"{req.message}"</p>
+                                    {req.image && (
+                                      <div className="pt-2">
+                                        <img 
+                                          src={req.image} 
+                                          alt="Tauschangebot Foto" 
+                                          className="w-48 max-h-36 object-cover rounded-lg border border-stone-200 shadow-sm cursor-zoom-in hover:opacity-90 transition-opacity" 
+                                          onClick={() => {
+                                            const w = window.open();
+                                            if (w) {
+                                              w.document.write(`<img src="${req.image}" style="max-width:90%; max-height:90vh; display:block; margin:5vh auto; box-shadow:0 4px 12px rgba(0,0,0,0.15); border-radius:8px;" />`);
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
                                   </div>
 
                                   {req.status === 'akzeptiert' && (
@@ -3391,7 +3511,25 @@ function App() {
                         {requests.filter(r => r.senderId === currentUser.uid).map(req => (
                           <tr key={req.id} className="hover:bg-stone-50/40 transition-colors">
                             <td className="p-3.5 font-semibold text-stone-850">{req.listingTitle}</td>
-                            <td className="p-3.5 text-stone-600 truncate max-w-[200px]">{req.offeredItem}</td>
+                            <td className="p-3.5 text-stone-600 max-w-[200px]">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate">{req.offeredItem}</span>
+                                {req.image && (
+                                  <button 
+                                    onClick={() => {
+                                      const w = window.open();
+                                      if (w) {
+                                        w.document.write(`<img src="${req.image}" style="max-width:90%; max-height:90vh; display:block; margin:5vh auto; box-shadow:0 4px 12px rgba(0,0,0,0.15); border-radius:8px;" />`);
+                                      }
+                                    }}
+                                    className="p-1 rounded bg-stone-100 hover:bg-stone-200 text-stone-600 transition-colors border border-stone-200 cursor-pointer"
+                                    title="Foto anzeigen"
+                                  >
+                                    <Camera className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
                             <td className="p-3.5">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                                 req.status === 'akzeptiert' 
@@ -3734,6 +3872,12 @@ function App() {
                   </h3>
                 </div>
 
+                {selectedListing.image && (
+                  <div className="w-full h-64 rounded-2xl overflow-hidden border border-stone-250 shadow-sm">
+                    <img src={selectedListing.image} alt={selectedListing.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 gap-4">
                   <div className="bg-emerald-50/70 border border-emerald-200/50 rounded-2xl p-5 space-y-2">
                     <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Biete:</span>
@@ -3859,6 +4003,51 @@ function App() {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-stone-700 uppercase tracking-wider block">Foto von deinem Angebot (Optional)</label>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 cursor-pointer transition-all duration-200 text-xs font-semibold shadow-sm w-full sm:w-auto justify-center">
+                        <Camera className="w-4 h-4 text-stone-500" />
+                        <span>{reqImage ? 'Anderes Foto wählen' : 'Foto hochladen'}</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setReqImageLoading(true);
+                            try {
+                              const base64 = await resizeAndConvertToBase64(file);
+                              setReqImage(base64);
+                            } catch (err: any) {
+                              showToast('Fehler beim Laden des Bildes: ' + err.message, 'error');
+                            } finally {
+                              setReqImageLoading(false);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {reqImageLoading && (
+                        <div className="w-5 h-5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                      )}
+
+                      {reqImage && !reqImageLoading && (
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-stone-200 shadow-sm group">
+                          <img src={reqImage} alt="Preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setReqImage('')}
+                            className="absolute inset-0 bg-stone-900/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer"
+                            title="Foto entfernen"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
                   <div className="flex gap-4 pt-4 border-t border-stone-100">
                     <button 
