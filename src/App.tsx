@@ -598,7 +598,10 @@ function App() {
     const handleMagicLink = async () => {
       const href = window.location.href;
       if (checkIsMagicLink(href)) {
+        // Immediately clean up the URL parameters (apiKey, oobCode, etc.) from the address bar
+        window.history.replaceState({}, document.title, window.location.pathname);
         setAuthLoading(true);
+        
         try {
           let email = window.localStorage.getItem('emailForSignIn') || 
                       window.localStorage.getItem('hoftausch_mock_magic_link_email');
@@ -611,7 +614,6 @@ function App() {
             await completeMagicLinkSignIn(email, href);
             window.localStorage.removeItem('emailForSignIn');
             window.localStorage.removeItem('hoftausch_mock_magic_link_email');
-            window.history.replaceState({}, document.title, window.location.pathname);
             showToast('Erfolgreich eingeloggt per Magic Link!');
           }
         } catch (error: any) {
