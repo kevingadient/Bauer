@@ -339,6 +339,7 @@ function App() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [fabBottom, setFabBottom] = useState(24);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   
   const [profileFirstName, setProfileFirstName] = useState('');
   const [profileLastName, setProfileLastName] = useState('');
@@ -466,6 +467,24 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
+
+  // Parallax mouse move handler for login screen
+  useEffect(() => {
+    if (currentUser) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY } = e;
+      const { innerWidth, innerHeight } = window;
+      const x = (clientX / innerWidth) - 0.5;
+      const y = (clientY / innerHeight) - 0.5;
+      setMousePos({ x, y });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [currentUser]);
 
 
   // Query parameter ?no-track=true handler
@@ -1561,10 +1580,157 @@ function App() {
   // Not Logged In View
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex flex-col justify-between font-sans relative overflow-hidden bg-stone-50">
-        {/* Decorative Blur Backgrounds */}
-        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
-        <div className="absolute left-0 bottom-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl -z-10" />
+      <div className="min-h-screen flex flex-col justify-between font-sans relative overflow-hidden bg-gradient-to-b from-amber-100/60 via-orange-50/40 to-emerald-50/30">
+        
+        {/* Style block for animations */}
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes swayLeft {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(2deg); }
+          }
+          @keyframes swayRight {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-3deg); }
+          }
+          .sway-left {
+            animation: swayLeft 8s ease-in-out infinite;
+            transform-origin: bottom left;
+          }
+          .sway-right {
+            animation: swayRight 10s ease-in-out infinite;
+            transform-origin: bottom right;
+          }
+        `}} />
+
+        {/* Parallax Background Layers */}
+        
+        {/* Layer 1: Distant Mountain Silhouettes (Background) */}
+        <div 
+          className="absolute inset-0 pointer-events-none -z-10 transition-transform duration-75 ease-out select-none"
+          style={{ transform: `translate(${mousePos.x * 12}px, ${mousePos.y * 12}px)` }}
+        >
+          <svg className="absolute bottom-0 w-full h-[60vh] text-stone-200/50 fill-current" viewBox="0 0 1440 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,280 L180,180 L360,260 L540,160 L720,240 L900,140 L1080,220 L1260,120 L1440,200 L1440,400 L0,400 Z" />
+          </svg>
+        </div>
+
+        {/* Layer 2: Rolling Hills & Farmhouse Silhouettes (Midground) */}
+        <div 
+          className="absolute inset-0 pointer-events-none -z-10 transition-transform duration-75 ease-out select-none"
+          style={{ transform: `translate(${mousePos.x * -16}px, ${mousePos.y * -10}px)` }}
+        >
+          <svg className="absolute bottom-0 w-full h-[45vh] text-emerald-800/10 fill-current" viewBox="0 0 1440 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Distant Hills */}
+            <path d="M0,180 C360,120 720,240 1080,150 C1260,105 1380,135 1440,150 L1440,300 L0,300 Z" />
+            
+            {/* Farm Barn Silhouette nestling on the hills */}
+            <g transform="translate(450, 90) scale(0.65)" className="text-emerald-800/20 fill-current">
+              {/* Silo */}
+              <rect x="180" y="30" width="30" height="90" rx="5" />
+              <path d="M180,30 C180,15 210,15 210,30 Z" />
+              {/* Main Barn */}
+              <path d="M0,80 L80,30 L160,80 L160,120 L0,120 Z" />
+              {/* Roof */}
+              <path d="M-5,82 L80,28 L165,82 L155,90 L80,42 L5,90 Z" />
+              {/* House */}
+              <rect x="230" y="60" width="80" height="60" />
+              <path d="M220,60 L270,25 L320,60 Z" />
+            </g>
+          </svg>
+        </div>
+
+        {/* Layer 3: Grazing Cows (Near Midground) */}
+        <div 
+          className="absolute inset-0 pointer-events-none -z-10 transition-transform duration-75 ease-out select-none"
+          style={{ transform: `translate(${mousePos.x * -28}px, ${mousePos.y * -18}px)` }}
+        >
+          <svg className="absolute bottom-0 w-full h-[35vh] text-emerald-800/20 fill-current" viewBox="0 0 1440 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Mid Hills */}
+            <path d="M0,120 C480,180 960,80 1440,140 L1440,200 L0,200 Z" />
+            
+            {/* Cow 1 (Grazing Left) */}
+            <g transform="translate(180, 110) scale(0.4)" className="text-emerald-850/35 fill-current">
+              {/* Body */}
+              <rect x="50" y="30" width="90" height="50" rx="10" />
+              {/* Legs */}
+              <rect x="60" y="75" width="10" height="30" />
+              <rect x="80" y="75" width="10" height="30" />
+              <rect x="110" y="75" width="10" height="30" />
+              <rect x="130" y="75" width="10" height="30" />
+              {/* Neck & Head grazing */}
+              <path d="M40,55 L10,80 L0,70 L25,45 Z" />
+              {/* Udders */}
+              <ellipse cx="100" cy="80" rx="8" ry="5" />
+            </g>
+
+            {/* Cow 2 (Standing Right) */}
+            <g transform="translate(1120, 95) scale(0.35)" className="text-emerald-850/30 fill-current">
+              <rect x="50" y="30" width="90" height="50" rx="10" />
+              <rect x="60" y="75" width="10" height="30" />
+              <rect x="80" y="75" width="10" height="30" />
+              <rect x="110" y="75" width="10" height="30" />
+              <rect x="130" y="75" width="10" height="30" />
+              {/* Neck & Head upright */}
+              <path d="M130,45 L160,20 L170,30 L145,55 Z" />
+              <path d="M160,20 L168,10 L173,22 Z" /> {/* Horns/Ears */}
+            </g>
+          </svg>
+        </div>
+
+        {/* Layer 4: Wheat & Corn Crops (Foreground - Bottom corners) */}
+        <div 
+          className="absolute inset-0 pointer-events-none -z-10 transition-transform duration-75 ease-out select-none"
+          style={{ transform: `translate(${mousePos.x * -45}px, ${mousePos.y * -30}px)` }}
+        >
+          {/* Left Crop Corner: Wheat & Corn */}
+          <div className="absolute bottom-0 left-0 w-[45%] h-[28vh] sway-left opacity-35 sm:opacity-50">
+            <svg className="w-full h-full text-amber-600/25 fill-current" viewBox="0 0 500 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Pasture edge */}
+              <path d="M0,220 Q120,180 250,230 T500,220 L500,300 L0,300 Z" className="text-emerald-800/15" />
+              {/* Wheat stalk silhouettes */}
+              <g transform="translate(10, 50) scale(0.8)">
+                <path d="M50,220 Q70,120 120,50 L122,53 Q72,122 52,220 Z" />
+                <path d="M120,50 C110,40 100,50 110,60 C100,70 110,80 120,70 C130,80 140,70 130,60 C140,50 130,40 120,50 Z" />
+              </g>
+              <g transform="translate(80, 70) scale(0.7)">
+                <path d="M50,220 Q75,100 110,40 L112,42 Q77,102 52,220 Z" />
+                <path d="M110,40 C100,30 90,40 100,50 C90,60 100,70 110,60 Z" />
+              </g>
+              {/* Corn stalk silhouettes */}
+              <g transform="translate(160, 60) scale(0.95)" className="text-emerald-700/15">
+                {/* Stem */}
+                <path d="M20,240 L35,60 L38,60 L23,240 Z" />
+                {/* Leaves */}
+                <path d="M30,160 Q-20,130 -10,120 Q10,120 28,145 Z" />
+                {/* Corn cob */}
+                <ellipse cx="38" cy="120" rx="10" ry="25" transform="rotate(25 38 120)" className="text-amber-500/30" />
+                <path d="M30,110 Q50,90 60,110 Z" />
+              </g>
+            </svg>
+          </div>
+
+          {/* Right Crop Corner: Wheat & Corn */}
+          <div className="absolute bottom-0 right-0 w-[45%] h-[28vh] sway-right opacity-35 sm:opacity-50">
+            <svg className="w-full h-full text-amber-600/25 fill-current" viewBox="0 0 500 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,230 Q150,250 300,190 T500,210 L500,300 L0,300 Z" className="text-emerald-800/15" />
+              {/* Wheat stalk silhouettes */}
+              <g transform="translate(380, 40) scale(0.9)">
+                <path d="M100,220 Q70,110 20,40 L18,43 Q68,112 98,220 Z" />
+                <path d="M20,40 C30,30 40,40 30,50 C40,60 30,70 20,60 C10,70 0,60 10,50 C0,40 10,30 20,40 Z" />
+              </g>
+              <g transform="translate(310, 60) scale(0.75)">
+                <path d="M100,220 Q80,120 40,50 L38,52 Q78,122 98,220 Z" />
+                <path d="M40,50 C50,40 60,50 50,60 C60,70 50,80 40,70 Z" />
+              </g>
+              {/* Corn stalk silhouettes */}
+              <g transform="translate(240, 50) scale(0.9)" className="text-emerald-700/15">
+                <path d="M40,240 L25,60 L22,60 L37,240 Z" />
+                <path d="M28,160 Q78,130 68,120 Q48,120 30,145 Z" />
+                <ellipse cx="22" cy="125" rx="9" ry="22" transform="rotate(-20 22 125)" className="text-amber-500/30" />
+              </g>
+            </svg>
+          </div>
+        </div>
 
         <div className="flex-grow flex items-center justify-center px-4 py-16">
           <div className="w-full max-w-md space-y-8 animate-fade-in">
